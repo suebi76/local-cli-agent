@@ -3,9 +3,9 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "kimi-k-cli"
+name = "local-cli-agent"
 version = "1.2.0"
-description = "Kimi K2.5 Agent CLI - Self-improving AI coding assistant with full tool use"
+description = "Local CLI Agent - Self-improving AI coding assistant with full tool use"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
@@ -14,10 +14,32 @@ authors = [
 ]
 dependencies = [
     "requests",
+    "prompt_toolkit>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "ruff>=0.4",
 ]
 
 [project.scripts]
-kimi-k = "kimi:main"
+local-cli = "local_cli_agent.cli:main"
 
-[tool.setuptools]
-py-modules = ["kimi"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["local_cli_agent*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]

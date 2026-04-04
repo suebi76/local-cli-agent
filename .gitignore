@@ -3,8 +3,16 @@
 *.backup.*
 
 # Memory & state (user-specific)
+.local-cli-memory.json
+.local-cli-changelog.json
 .kimi-memory.json
 .kimi-changelog.json
+
+# Tooling
+.playwright-mcp/
+
+# Local models
+models/
 
 # Python
 __pycache__/
