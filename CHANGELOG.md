@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.4.0] — 2026-04-05
+
+### Added
+- **Master-Orchestrator** (`orchestrator.py`) — for complex tasks, a master LLM call produces
+  a specialist plan (up to 10 steps, each assigned to the best profile). User can confirm,
+  edit or abort before execution. Context summaries pass between steps.
+  Available as `/orchestrate <goal>` and `local-cli --orchestrate "goal"`.
+- **Auto-suggest** — when a prompt is detected as complex (heuristic score ≥ 0.55 based on
+  word count + keywords), the system offers the orchestrator before sending to the agent.
+  User can always decline with `n`.
+- **Verification profile** (`verifikation`) — automatically inserted as penultimate step in
+  every orchestration that contains code steps. Runs tests, checks imports, checks syntax,
+  outputs structured ✅/❌ report, fixes errors immediately.
+- **Interactive plan editor** — before orchestration starts, `[e]` opens an editor where
+  the user can add, remove, or modify steps and specialist assignments.
+- **Retry/skip/abort on step failure** — if a step throws an exception, the user is asked
+  `[r]etry / [s]kip / [a]bort` instead of crashing silently.
+
+### Changed
+- Profiles now include `verifikation` (15th profile total)
+- Profile selector updated with new entry
+
+---
+
 ## [2.3.0] — 2026-04-05
 
 ### Added

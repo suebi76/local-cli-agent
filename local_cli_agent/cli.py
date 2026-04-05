@@ -44,6 +44,8 @@ Examples:
                         help="Watch PATH and trigger agent with INSTRUCTION on each change")
     parser.add_argument("--mission", type=str, metavar="GOAL",
                         help="Run mission mode: agent plans and executes GOAL step by step")
+    parser.add_argument("--orchestrate", type=str, metavar="GOAL",
+                        help="Run orchestrator: master assigns specialists per step for complex tasks")
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, lambda *_: (print(f"\n{DIM}Goodbye!{RESET}"), sys.exit(0)))
@@ -67,7 +69,19 @@ Examples:
     # ── Start agent ──────────────────────────────────────────────────────────
     thinking = not args.instant
 
-    if args.mission:
+    if args.orchestrate:
+        from local_cli_agent import orchestrator as _orchestrator
+        from local_cli_agent.agent import agent_loop
+        from local_cli_agent.config import build_system_prompt
+        messages = [{"role": "system", "content": build_system_prompt()}]
+        _orchestrator.run_orchestration(
+            goal=args.orchestrate,
+            messages=messages,
+            agent_callback=agent_loop,
+            thinking=thinking,
+            max_tokens=args.tokens,
+        )
+    elif args.mission:
         from local_cli_agent import mission as _mission
         from local_cli_agent.agent import agent_loop
         from local_cli_agent.config import build_system_prompt

@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-2.3.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.4.0-brightgreen.svg)](CHANGELOG.md)
 
 [🇬🇧 English](#english) · [🇩🇪 Deutsch](#deutsch)
 
@@ -22,7 +22,8 @@ the web, and even improve its own source code.
 
 - **Runs 100% locally** — Ollama or LM Studio as backend, no cloud required
 - **Full tool use** — bash, file read/write/edit, diff, git, grep, glob, web search & fetch
-- **Agent profiles** — 14 built-in personas: Vibe-Coder, Refactor, Reviewer, Debugger, Explainer, Frontend, Backend, Tester, Security, Docs, Performance, Architect, DevOps
+- **Master orchestrator** — auto-detects complex tasks, assigns specialists per step, inserts verification automatically
+- **Agent profiles** — 15 built-in personas: Vibe-Coder, Refactor, Reviewer, Debugger, Explainer, Frontend, Backend, Tester, Security, Docs, Performance, Architect, DevOps, Verification
 - **Mission mode** — give a high-level goal; agent plans it, executes step by step, pauses for review
 - **Auto-test loop** — runs your test suite after every file change; agent self-corrects on failure
 - **Undo system** — every file change is snapshotted; `/undo` restores any previous state instantly
@@ -124,6 +125,7 @@ Interval: 2s  |  /watch stop to exit
 | `/undo [n]` | Undo the last n file changes |
 | `/checkpoint [name]` | Set a manual restore point |
 | `/mission <goal>` | Start mission mode (plan + execute) |
+| `/orchestrate <goal>` | Start orchestrator — master assigns specialists per step |
 | `/autotest <cmd>` | Auto-run tests after every file change |
 | `/autotest off` | Disable auto-test |
 | `/watch <path> <instruction>` | Start watch mode |
@@ -153,6 +155,46 @@ Interval: 2s  |  /watch stop to exit
 | `web_fetch` | Fetch and read web pages |
 | `memory` | Persistent key-value memory across sessions |
 | `self_improve` | Read/edit own source, create backups, view changelog |
+
+### Orchestrator
+
+For complex multi-concern tasks, the orchestrator goes further than Mission Mode:
+the master LLM **automatically assigns the best specialist** to each step.
+
+**Triggered in two ways:**
+1. **Auto-suggest** — when you type a complex prompt, the system detects it and offers the orchestrator before proceeding
+2. **Explicit** — `/orchestrate <goal>` or `local-cli --orchestrate "goal"`
+
+```
+You: Baue mir eine vollständige REST-API für ein Blog-System mit Authentifizierung und Tests
+
+[!] Komplexe Aufgabe erkannt. Soll der Orchestrator verwendet werden?
+    [Enter] = Orchestrator  [n] = Direkt machen
+
+Orchestrierung: REST-API Blog-System
+────────────────────────────────────────────────────────────────
+   1/6  🏛️ Architekt             Datenbankschema und API-Struktur entwerfen
+   2/6  ⚙️ Backend-Spezialist   Models und Datenbankzugriff implementieren
+   3/6  ⚙️ Backend-Spezialist   API-Routen und Authentifizierung
+   4/6  🧪 Tester               Tests für alle Endpunkte schreiben
+   5/6  ✅ Verifikation         Tests ausführen, Imports prüfen
+   6/6  📝 Dokumentation        README und API-Dokumentation
+────────────────────────────────────────────────────────────────
+[Enter] = starten  [n] = abbrechen  [e] = Schritte bearbeiten
+```
+
+**What makes it different from Mission Mode:**
+
+| Mission Mode | Orchestrator |
+|---|---|
+| You define the steps | Master LLM defines the steps |
+| One generic agent for all | Right specialist per step |
+| No auto-verification | Verification step inserted automatically |
+| No plan editing | Interactive plan editor before start |
+
+**Verification is always included** — if the plan contains code steps (backend, frontend, tester), the orchestrator automatically inserts a ✅ Verification step that runs tests, checks imports, checks syntax, and fixes errors immediately.
+
+**Plan editor** — press `[e]` before execution to add, remove, or reassign steps.
 
 ### Agent Profiles
 
@@ -397,7 +439,8 @@ Befehle ausführen, im Web suchen und sogar seinen eigenen Quellcode verbessern 
 
 - **100% lokal** — Ollama oder LM Studio als Backend, keine Cloud erforderlich
 - **Vollständiges Tool-System** — bash, Dateien lesen/schreiben/bearbeiten, diff, git, grep, glob, Websuche
-- **Agent-Profile** — 14 eingebaute Persönlichkeiten: Vibe-Coder, Aufräumen, Reviewer, Debugger, Erklärer, Frontend, Backend, Tester, Sicherheit, Docs, Performance, Architekt, DevOps
+- **Master-Orchestrator** — erkennt komplexe Aufgaben automatisch, weist Spezialisten zu, fügt Verifikation automatisch ein
+- **Agent-Profile** — 15 eingebaute Persönlichkeiten: Vibe-Coder, Aufräumen, Reviewer, Debugger, Erklärer, Frontend, Backend, Tester, Sicherheit, Docs, Performance, Architekt, DevOps, Verifikation
 - **Mission-Mode** — gib ein übergeordnetes Ziel vor; Agent plant und führt es schrittweise aus
 - **Auto-Test-Loop** — führt nach jeder Dateiänderung automatisch deine Tests aus; Agent korrigiert sich selbst
 - **Undo-System** — jede Dateiänderung wird gespeichert; `/undo` stellt jeden vorherigen Zustand sofort wieder her
@@ -475,6 +518,7 @@ local-cli --watch ./src "Führe Tests bei jeder Änderung aus"      # Watch-Mode
 | `/undo [n]` | Letzte n Dateiänderungen rückgängig machen |
 | `/checkpoint [name]` | Manuellen Rückgabepunkt setzen |
 | `/mission <ziel>` | Mission-Mode starten (Agent plant + führt aus) |
+| `/orchestrate <ziel>` | Orchestrator starten — Master weist Spezialisten zu |
 | `/autotest <cmd>` | Tests nach jeder Änderung automatisch ausführen |
 | `/autotest off` | Auto-Test deaktivieren |
 | `/watch <pfad> <anweisung>` | Watch-Mode starten |
@@ -504,6 +548,36 @@ local-cli --watch ./src "Führe Tests bei jeder Änderung aus"      # Watch-Mode
 | `web_fetch` | Webseiten laden und lesen |
 | `memory` | Persistentes Schlüssel-Wert-Gedächtnis |
 | `self_improve` | Quellcode lesen/bearbeiten, Backup, Changelog |
+
+### Orchestrator
+
+Für komplexe Aufgaben mit mehreren Belangen weist der Orchestrator automatisch den besten Spezialisten pro Schritt zu.
+
+**Zwei Wege:**
+1. **Auto-Vorschlag** — bei komplexen Prompts fragt das System von sich aus
+2. **Explizit** — `/orchestrate <ziel>` oder `local-cli --orchestrate "ziel"`
+
+```
+Du: Baue mir eine vollständige REST-API für ein Blog-System mit Tests
+
+[!] Komplexe Aufgabe erkannt. Soll der Orchestrator verwendet werden?
+    [Enter] = Orchestrator  [n] = Direkt machen
+
+Orchestrierung: REST-API Blog-System
+────────────────────────────────────────────────────────────────
+   1/6  🏛️ Architekt         Schema und Struktur entwerfen
+   2/6  ⚙️ Backend           Models und Routen implementieren
+   3/6  🧪 Tester            Tests schreiben
+   4/6  ✅ Verifikation      Tests ausführen, Fehler reparieren
+   5/6  🛡️ Sicherheit        Code auf Lücken prüfen
+   6/6  📝 Dokumentation     README schreiben
+────────────────────────────────────────────────────────────────
+[Enter] = starten  [n] = abbrechen  [e] = bearbeiten
+```
+
+**Verifikation wird automatisch eingefügt** wenn der Plan Code-Schritte enthält — läuft Tests, prüft Imports, repariert Fehler sofort.
+
+**Plan-Editor** — `[e]` vor dem Start: Schritte hinzufügen, löschen, Spezialisten ändern.
 
 ### Agent-Profile
 

@@ -23,13 +23,14 @@ from local_cli_agent import watcher as _watcher
 from local_cli_agent import autotest as _autotest
 from local_cli_agent import mission as _mission
 from local_cli_agent import profiles as _profiles
+from local_cli_agent import orchestrator as _orchestrator
 import local_cli_agent.executor as executor
 
 _SLASH_COMMANDS = [
     "/auto", "/clear", "/cd", "/compact", "/memory",
     "/model", "/profile", "/history", "/tokens", "/save",
     "/undo", "/checkpoint",
-    "/mission",
+    "/mission", "/orchestrate",
     "/autotest",
     "/watch",
     "/reload", "/version", "/changelog", "/help", "/quit",
@@ -49,6 +50,7 @@ _CMD_META = {
     "/undo":       "Letzte Dateiänderung rückgängig  z.B. /undo 3",
     "/checkpoint": "Manuellen Rückgabepunkt setzen",
     "/mission":    "Mehrstufige Mission starten  z.B. /mission Refaktoriere alle API-Endpunkte",
+    "/orchestrate": "Master-Orchestrator: mehrere Spezialisten für komplexe Aufgaben",
     "/autotest":   "Tests nach jeder Dateiänderung automatisch ausführen",
     "/watch":      "Dateien beobachten und Agent automatisch auslösen",
     "/reload":     "Nach Self-Improvement neu laden",
@@ -96,6 +98,7 @@ def print_banner():
   {YELLOW}/undo [n]{RESET}          Letzte n Dateiänderungen rückgängig machen
   {YELLOW}/checkpoint [name]{RESET} Manuellen Rückgabepunkt setzen
   {YELLOW}/mission <ziel>{RESET}    Mehrstufige Mission (Agent plant + fuehrt aus)
+  {YELLOW}/orchestrate <ziel>{RESET} Mehrere Spezialisten orchestrieren (komplex)
   {YELLOW}/autotest <cmd>{RESET}    Tests nach jeder Aenderung automatisch ausfuehren
   {YELLOW}/autotest off{RESET}      Auto-Test deaktivieren
   {YELLOW}/watch <pfad> <anweisung>{RESET}  Dateien beobachten (Agent auto-auslösen)
@@ -371,6 +374,21 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                         max_tokens=max_tokens,
                     )
 
+            # ── /orchestrate ───────────────────────────────────────────────
+            elif cmd_lower == "/orchestrate":
+                goal = " ".join(cmd[1:]).strip()
+                if not goal:
+                    print(f"{DIM}Verwendung: /orchestrate <Ziel>{RESET}\n"
+                          f"  Beispiel: {YELLOW}/orchestrate Baue eine REST-API für ein Blog-System{RESET}\n")
+                else:
+                    _orchestrator.run_orchestration(
+                        goal=goal,
+                        messages=messages,
+                        agent_callback=agent_loop,
+                        thinking=thinking,
+                        max_tokens=max_tokens,
+                    )
+
             # ── /autotest ─────────────────────────────────────────────────
             elif cmd_lower == "/autotest":
                 if len(cmd) < 2:
@@ -454,6 +472,33 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                 print(f"{DIM}Unbekannter Befehl. /help für alle Befehle.{RESET}\n")
 
             continue
+
+        # ── Auto-suggest orchestrator for complex tasks ───────────────────
+        if _orchestrator.should_suggest(user_input):
+            print(
+                f"\n{BOLD}{YELLOW}[!]{RESET} Komplexe Aufgabe erkannt. "
+                f"Soll der {BOLD}Orchestrator{RESET} verwendet werden?\n"
+                f"    {DIM}Mehrere Spezialisten arbeiten nacheinander "
+                f"(Architekt → Backend → Tester → Verifikation → ...){RESET}"
+            )
+            try:
+                orch_choice = input(
+                    f"    [{BOLD}Enter{RESET}] = Orchestrator  "
+                    f"[{BOLD}n{RESET}] = Direkt machen  "
+                ).strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                orch_choice = "n"
+
+            if orch_choice != "n":
+                _orchestrator.run_orchestration(
+                    goal=user_input,
+                    messages=messages,
+                    agent_callback=agent_loop,
+                    thinking=thinking,
+                    max_tokens=max_tokens,
+                )
+                print()
+                continue
 
         # ── Send message to agent ─────────────────────────────────────────
         messages.append({"role": "user", "content": user_input})
