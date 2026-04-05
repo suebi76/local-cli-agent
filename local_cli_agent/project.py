@@ -77,7 +77,8 @@ def _read_python_meta(cwd: str) -> dict:
     path = os.path.join(cwd, "pyproject.toml")
     if os.path.exists(path):
         try:
-            text = open(path, encoding="utf-8").read()
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
             for key, pat in [("name", r'name\s*=\s*["\']([^"\']+)'),
                               ("version", r'version\s*=\s*["\']([^"\']+)'),
                               ("description", r'description\s*=\s*["\']([^"\']+)')]:
@@ -89,7 +90,8 @@ def _read_python_meta(cwd: str) -> dict:
     req = os.path.join(cwd, "requirements.txt")
     if os.path.exists(req):
         try:
-            lines = open(req, encoding="utf-8").read().splitlines()
+            with open(req, encoding="utf-8") as f:
+                lines = f.read().splitlines()
             deps = [l.split("==")[0].split(">=")[0].strip() for l in lines
                     if l.strip() and not l.startswith("#")][:8]
             if deps:
@@ -104,7 +106,8 @@ def _read_node_meta(cwd: str) -> dict:
     path = os.path.join(cwd, "package.json")
     if os.path.exists(path):
         try:
-            data = json.loads(open(path, encoding="utf-8").read())
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
             for key in ("name", "version", "description"):
                 if data.get(key):
                     info[key] = str(data[key])
@@ -144,7 +147,8 @@ def _read_readme_summary(cwd: str) -> str:
         p = os.path.join(cwd, name)
         if os.path.exists(p):
             try:
-                lines = open(p, encoding="utf-8", errors="replace").read().splitlines()
+                with open(p, encoding="utf-8", errors="replace") as f:
+                    lines = f.read().splitlines()
                 for line in lines[:30]:
                     clean = line.strip().lstrip("#").strip()
                     if len(clean) > 15 and not clean.startswith("!["): # skip image lines

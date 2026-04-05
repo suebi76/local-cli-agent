@@ -25,7 +25,11 @@ def load_memory():
     return {}
 
 
-def save_memory_file(data):
-    """Save memory to file."""
-    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+def save_memory_file(data) -> bool:
+    """Save memory to file. Returns False on error instead of raising."""
+    try:
+        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception:
+        return False

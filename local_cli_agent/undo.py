@@ -86,13 +86,10 @@ def undo(n: int = 1) -> str:
                     restored.append(os.path.basename(path))
                 else:
                     # existed=True but content=None means file was unreadable at checkpoint time
-                    if fs.get("existed"):
-                        errors.append(
-                            f"{os.path.basename(path)}: Originalinhalt nicht verfügbar "
-                            f"(Datei war beim Checkpoint nicht lesbar)"
-                        )
-                    else:
-                        skipped.append(os.path.basename(path))
+                    errors.append(
+                        f"{os.path.basename(path)}: Originalinhalt nicht verfügbar "
+                        f"(Datei war beim Checkpoint nicht lesbar)"
+                    )
             except Exception as e:
                 errors.append(f"{os.path.basename(path)}: {e}")
 
