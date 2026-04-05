@@ -402,6 +402,21 @@ LOCAL_CLI_LMSTUDIO_URL=http://localhost:1234
 | `gemma3:12b` | 8.0 GB | Strong reasoning |
 | `mistral:7b` | 4.1 GB | Good instruction following |
 
+### Tested With
+
+This project was developed and tested on the following hardware:
+
+| Component | Details |
+|---|---|
+| CPU | Intel Core i7 (13th Gen) |
+| GPU | NVIDIA GeForce RTX 4090 |
+| Backend | LM Studio 0.4.9 |
+| Model | Qwen3-Coder-next (GGUF) |
+
+> The RTX 4090 allows running large GGUF models (30B+) at full speed.
+> Smaller GPUs (8 GB VRAM and up) work well with 7B–14B models — the agent
+> adapts to whatever model is loaded.
+
 ### Development
 
 ```bash
@@ -756,6 +771,21 @@ LOCAL_CLI_LMSTUDIO_URL=http://localhost:1234
 | `llama3.2:3b` | 2,0 GB | Schnell, zuverlässig, allgemein |
 | `gemma3:12b` | 8,0 GB | Starkes Reasoning |
 | `mistral:7b` | 4,1 GB | Gute Instruction-Following |
+
+### Getestet mit
+
+Dieses Projekt wurde auf folgender Hardware entwickelt und getestet:
+
+| Komponente | Details |
+|---|---|
+| CPU | Intel Core i7 (13. Generation) |
+| GPU | NVIDIA GeForce RTX 4090 |
+| Backend | LM Studio 0.4.9 |
+| Modell | Qwen3-Coder-next (GGUF) |
+
+> Die RTX 4090 ermöglicht den Betrieb großer GGUF-Modelle (30B+) mit voller Geschwindigkeit.
+> Kleinere GPUs (ab 8 GB VRAM) funktionieren gut mit 7B–14B-Modellen —
+> der Agent passt sich automatisch an das geladene Modell an.
 
 ### Deinstallation
 
