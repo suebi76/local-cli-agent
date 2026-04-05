@@ -157,6 +157,59 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "diff",
+            "description": "Preview a file change as a unified diff WITHOUT writing anything. Use this before edit_file to show the user exactly what will change. Safe to call — read-only.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "File to preview the change for"},
+                    "old_string": {"type": "string", "description": "The exact string that would be replaced"},
+                    "new_string": {"type": "string", "description": "The replacement string"}
+                },
+                "required": ["path", "old_string", "new_string"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git",
+            "description": "Run safe git operations. Dangerous commands (push --force, reset --hard, clean -f) are permanently blocked. Use bash for anything not covered here.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["status", "diff", "log", "add", "commit", "branch", "stash"],
+                        "description": "Git action to perform"
+                    },
+                    "files": {"type": "string", "description": "For 'add': files to stage (default: '.' for all)"},
+                    "message": {"type": "string", "description": "For 'commit': commit message"},
+                    "target": {"type": "string", "description": "For 'diff': optional file path or commit ref"},
+                    "count": {"type": "integer", "description": "For 'log': number of commits to show (default: 10)"},
+                    "subcommand": {"type": "string", "description": "For 'stash': 'list', 'push', or 'pop'"}
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "open",
+            "description": "Open a file or URL in the default system application. Examples: open index.html in browser, open image.png in image viewer, open a URL. Works on Windows, macOS, and Linux.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Absolute or relative file path, or a URL starting with http:// or https://"}
+                },
+                "required": ["path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "self_improve",
             "description": "Verbessere dich selbst (Local CLI Agent). Quellcode lesen, bearbeiten, Backup erstellen oder Changelog pflegen. Syntax wird automatisch geprüft – defekter Code wird NICHT gespeichert. Backup ist Pflicht vor jeder Änderung.",
             "parameters": {

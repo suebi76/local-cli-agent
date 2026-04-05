@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Steffen Schwabe
 import ast
+import difflib
 import os
 import sys
 import json
@@ -504,6 +505,124 @@ def execute_tool(name, arguments):
                 return get_changelog()
 
         return f"Unbekannte self_improve-Aktion: {action}"
+
+    # ── diff ─────────────────────────────────────────────────────────────
+    elif name == "diff":
+        path = args.get("path", "")
+        old_string = args.get("old_string", "")
+        new_string = args.get("new_string", "")
+        abs_path = os.path.abspath(path)
+        if not os.path.exists(abs_path):
+            return f"Error: File not found: {abs_path}"
+        try:
+            with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+        except Exception as e:
+            return f"Error reading file: {e}"
+        if not content.count(old_string):
+            return f"String not found in {path} — nothing to diff."
+        new_content = content.replace(old_string, new_string, 1)
+        lines = list(difflib.unified_diff(
+            content.splitlines(keepends=True),
+            new_content.splitlines(keepends=True),
+            fromfile=f"{path}  (vorher)",
+            tofile=f"{path}  (nachher)",
+            lineterm="",
+        ))
+        if not lines:
+            return "Keine Änderungen (old_string und new_string sind identisch)."
+        output = "".join(lines)
+        show_output(output, max_lines=60)
+        return output
+
+    # ── git ──────────────────────────────────────────────────────────────
+    elif name == "git":
+        action = args.get("action", "status")
+
+        # ── Permanently blocked operations ───────────────────────────────
+        _BLOCKED = {
+            "push --force", "push -f",
+            "reset --hard", "reset -h",
+            "clean -f", "clean -fd", "clean -fx",
+            "checkout --",
+            "branch -D", "branch -d",
+        }
+
+        if action == "status":
+            cmd = "git status"
+        elif action == "diff":
+            target = args.get("target", "")
+            cmd = f"git diff {target}".strip()
+        elif action == "log":
+            count = int(args.get("count", 10))
+            cmd = f"git log --oneline -{count}"
+        elif action == "add":
+            files = args.get("files", ".")
+            cmd = f"git add {files}"
+        elif action == "commit":
+            message = args.get("message", "")
+            if not message:
+                return "Error: 'message' is required for commit."
+            safe_msg = message.replace('"', '\\"')
+            cmd = f'git commit -m "{safe_msg}"'
+        elif action == "branch":
+            cmd = "git branch"
+        elif action == "stash":
+            sub = args.get("subcommand", "list")
+            if sub not in ("list", "pop", "push"):
+                return "Error: stash subcommand must be 'list', 'push', or 'pop'."
+            cmd = f"git stash {sub}"
+        else:
+            return (
+                f"Error: unknown git action '{action}'. "
+                "Allowed: status, diff, log, add, commit, branch, stash"
+            )
+
+        cmd_lower = cmd.lower()
+        for blocked in _BLOCKED:
+            if blocked in cmd_lower:
+                return f"Error: '{blocked}' is blocked for safety. Use bash if you are sure."
+
+        print(f" {DIM}$ {cmd}{RESET}")
+        if not ask_permission("git", cmd):
+            return "User denied execution."
+        try:
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True, timeout=30,
+                cwd=os.getcwd(), encoding="utf-8", errors="replace",
+            )
+            output = result.stdout
+            if result.stderr:
+                output += ("\n" if output else "") + result.stderr
+            if result.returncode != 0:
+                output += f"\n[exit code: {result.returncode}]"
+            if not output.strip():
+                output = "[git command completed, no output]"
+            show_output(output)
+            return output[:5000]
+        except Exception as e:
+            return f"Error: {e}"
+
+    # ── open ─────────────────────────────────────────────────────────────
+    elif name == "open":
+        path = args.get("path", "")
+        is_url = path.startswith(("http://", "https://"))
+        target = path if is_url else os.path.abspath(path)
+        if not is_url and not os.path.exists(target):
+            return f"Error: File not found: {target}"
+        if not ask_permission("open", target):
+            return "User denied execution."
+        try:
+            if sys.platform == "win32":
+                os.startfile(target)
+            elif sys.platform == "darwin":
+                subprocess.run(["open", target], check=True)
+            else:
+                subprocess.run(["xdg-open", target], check=True)
+            print(f" {DIM}Opened: {target}{RESET}")
+            return f"Opened: {target}"
+        except Exception as e:
+            return f"Error opening {target}: {e}"
 
     # ── unknown ──────────────────────────────────────────────────────────
     else:
