@@ -50,6 +50,7 @@ def build_system_prompt(extra=None, model_name=""):
     """Build the system prompt with current state, including project context."""
     from local_cli_agent import api as _api
     from local_cli_agent.project import get_project_context
+    from local_cli_agent.profiles import get_active_extra
     active_model = model_name or _api.get_model_name()
     prompt = AGENT_SYSTEM_PROMPT.format(
         version=VERSION,
@@ -61,6 +62,9 @@ def build_system_prompt(extra=None, model_name=""):
     project_ctx = get_project_context(os.getcwd())
     if project_ctx:
         prompt += f"\n\n{project_ctx}"
+    profile_extra = get_active_extra()
+    if profile_extra:
+        prompt += f"\n\n{profile_extra}"
     if extra:
         prompt += f"\n\nZusätzliche Anweisungen: {extra}"
     return prompt

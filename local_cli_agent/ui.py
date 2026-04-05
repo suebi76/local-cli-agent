@@ -22,11 +22,12 @@ from local_cli_agent import undo as _undo
 from local_cli_agent import watcher as _watcher
 from local_cli_agent import autotest as _autotest
 from local_cli_agent import mission as _mission
+from local_cli_agent import profiles as _profiles
 import local_cli_agent.executor as executor
 
 _SLASH_COMMANDS = [
     "/auto", "/clear", "/cd", "/compact", "/memory",
-    "/model", "/history", "/tokens", "/save",
+    "/model", "/profile", "/history", "/tokens", "/save",
     "/undo", "/checkpoint",
     "/mission",
     "/autotest",
@@ -41,6 +42,7 @@ _CMD_META = {
     "/compact":    "Konversation komprimieren (spart Tokens)",
     "/memory":     "Gespeicherte Erinnerungen anzeigen",
     "/model":      "Modell wechseln",
+    "/profile":    "Agenten-Persönlichkeit wechseln  z.B. /profile aufraumen",
     "/history":    "Nachrichtenverlauf anzeigen",
     "/tokens":     "Max. Output-Tokens setzen  z.B. /tokens 8192",
     "/save":       "Konversation als Markdown speichern",
@@ -85,7 +87,8 @@ def print_banner():
   {YELLOW}/clear{RESET}            Konversationsverlauf loeschen
   {YELLOW}/cd <path>{RESET}        Arbeitsverzeichnis wechseln
   {YELLOW}/compact{RESET}          Konversation komprimieren (spart Tokens)
-  {YELLOW}/model{RESET}            Modell wechseln
+  {YELLOW}/model{RESET}            Modell wechseln ohne Neustart
+  {YELLOW}/profile{RESET}          Agenten-Persoenlichkeit wechseln (14 Profile)
   {YELLOW}/save{RESET}             Konversation als Markdown speichern
   {YELLOW}/memory{RESET}           Gespeicherte Erinnerungen anzeigen
   {YELLOW}/history{RESET}          Nachrichtenverlauf anzeigen
@@ -115,7 +118,9 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
     messages = [{"role": "system", "content": build_system_prompt(system_prompt)}]
 
     auto_str = f"{GREEN}on{RESET}" if executor.auto_approve else f"{RED}off{RESET}"
-    print(f"{DIM}Auto-approve: {auto_str} {DIM}| Tokens: {max_tokens}{RESET}")
+    active_p = _profiles.get_active()
+    profile_str = f"{active_p.emoji} {active_p.label}" if active_p.id != "standard" else "Standard"
+    print(f"{DIM}Auto-approve: {auto_str} {DIM}| Tokens: {max_tokens} | Profil: {profile_str}{RESET}")
     print(f"{DIM}CWD: {os.getcwd()}{RESET}\n")
 
     session = PromptSession(
@@ -279,6 +284,31 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                     print(f"{GREEN}Modell gewechselt: {entry.name}{RESET}\n")
                 else:
                     print(f"{DIM}Abgebrochen.{RESET}\n")
+
+            # ── /profile ──────────────────────────────────────────────────
+            elif cmd_lower == "/profile":
+                if len(cmd) > 1:
+                    pid = cmd[1].lower()
+                    chosen = _profiles.set_profile(pid)
+                    if chosen:
+                        messages[0]["content"] = build_system_prompt(system_prompt)
+                        if chosen.id == "standard":
+                            print(f"{DIM}Profil zurückgesetzt: Standard{RESET}\n")
+                        else:
+                            print(f"{GREEN}Profil aktiv: {chosen.emoji} {chosen.label}{RESET}")
+                            print(f"{DIM}{chosen.tagline}{RESET}\n")
+                    else:
+                        ids = ", ".join(_profiles.PROFILES.keys())
+                        print(f"{RED}Unbekanntes Profil '{cmd[1]}'.{RESET} "
+                              f"Verfügbar: {ids}\n")
+                else:
+                    chosen = _profiles.show_selector()
+                    if chosen:
+                        messages[0]["content"] = build_system_prompt(system_prompt)
+                        if chosen.id == "standard":
+                            print(f"{DIM}Profil zurückgesetzt: Standard{RESET}\n")
+                        else:
+                            print(f"\n{GREEN}Profil aktiv: {chosen.emoji} {chosen.label}{RESET}\n")
 
             # ── /compact ───────────────────────────────────────────────────
             elif cmd_lower == "/compact":

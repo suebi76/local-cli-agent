@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.3.0] — 2026-04-05
+
+### Added
+- **Agent Profiles** (`profiles.py`) — 14 built-in personas activated with `/profile` or
+  `/profile <id>`. Each profile appends a focused system-prompt extension.
+  Active profile is shown in the startup status line and injected into every prompt.
+
+  | ID | Profil | Zweck |
+  |---|---|---|
+  | `standard` | 🤖 Standard | Ausgewogener Allzweck-Assistent |
+  | `vibe` | ⚡ Vibe-Coder | Einfach machen, keine langen Erklärungen |
+  | `aufraumen` | 🏗️ Aufräumen & Strukturieren | Monolith → saubere Module |
+  | `reviewer` | 🔍 Code-Reviewer | Feedback geben, keinen Code schreiben |
+  | `debugger` | 🐛 Fehlersuche | Bugs methodisch finden und beheben |
+  | `erklarer` | 📖 Erklärer | Alles in einfacher Sprache ohne Jargon |
+  | `frontend` | 🎨 Frontend | HTML, CSS, JS — schön und bedienbar |
+  | `backend` | ⚙️ Backend | APIs, Datenbanken, Server |
+  | `tester` | 🧪 Tester | Sinnvolle Tests schreiben |
+  | `security` | 🛡️ Sicherheit | Schwachstellen methodisch prüfen |
+  | `docs` | 📝 Dokumentation | README, Kommentare, API-Docs |
+  | `performance` | 🚀 Performance | Engpässe finden und beheben |
+  | `architect` | 🏛️ Architekt | Erst planen, dann bauen |
+  | `devops` | 🐳 DevOps | Docker, CI/CD, Deployment |
+
+---
+
 ## [2.2.0] — 2026-04-05
 
 ### Added

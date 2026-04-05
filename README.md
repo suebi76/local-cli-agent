@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-2.2.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.0-brightgreen.svg)](CHANGELOG.md)
 
 [🇬🇧 English](#english) · [🇩🇪 Deutsch](#deutsch)
 
@@ -22,6 +22,7 @@ the web, and even improve its own source code.
 
 - **Runs 100% locally** — Ollama or LM Studio as backend, no cloud required
 - **Full tool use** — bash, file read/write/edit, diff, git, grep, glob, web search & fetch
+- **Agent profiles** — 14 built-in personas: Vibe-Coder, Refactor, Reviewer, Debugger, Explainer, Frontend, Backend, Tester, Security, Docs, Performance, Architect, DevOps
 - **Mission mode** — give a high-level goal; agent plans it, executes step by step, pauses for review
 - **Auto-test loop** — runs your test suite after every file change; agent self-corrects on failure
 - **Undo system** — every file change is snapshotted; `/undo` restores any previous state instantly
@@ -113,6 +114,8 @@ Interval: 2s  |  /watch stop to exit
 | `/clear` | Clear conversation history |
 | `/cd <path>` | Change working directory |
 | `/compact` | Summarize conversation to save tokens |
+| `/profile` | Switch agent profile (shows selector) |
+| `/profile <id>` | Activate profile directly (e.g. `/profile aufraumen`) |
 | `/model` | Switch model without restarting |
 | `/save` | Export conversation as Markdown |
 | `/memory` | Show all saved memories |
@@ -150,6 +153,48 @@ Interval: 2s  |  /watch stop to exit
 | `web_fetch` | Fetch and read web pages |
 | `memory` | Persistent key-value memory across sessions |
 | `self_improve` | Read/edit own source, create backups, view changelog |
+
+### Agent Profiles
+
+Switch the agent's personality to match your current task. No technical knowledge required —
+just pick from the list and the agent adapts its entire behavior.
+
+```
+/profile              → opens the selector
+/profile aufraumen    → activate directly by ID
+/profile off          → back to standard
+```
+
+| ID | Profile | Best for |
+|---|---|---|
+| `standard` | 🤖 Standard | General-purpose assistant |
+| `vibe` | ⚡ Vibe-Coder | Just make it work — fast, pragmatic, no lectures |
+| `aufraumen` | 🏗️ Refactor & Restructure | Split large files into clean logical modules |
+| `reviewer` | 🔍 Code Reviewer | Structured feedback — never writes code, only analyses |
+| `debugger` | 🐛 Bug Hunter | Methodical bug finding and fixing |
+| `erklarer` | 📖 Explainer | Everything in plain language, no jargon |
+| `frontend` | 🎨 Frontend | HTML, CSS, JS — beautiful, accessible, responsive |
+| `backend` | ⚙️ Backend | APIs, databases, servers, security |
+| `tester` | 🧪 Tester | Tests that actually catch bugs |
+| `security` | 🛡️ Security | Find vulnerabilities before someone else does |
+| `docs` | 📝 Documentation | README, comments, API docs people actually read |
+| `performance` | 🚀 Performance | Find bottlenecks, measure, then optimize |
+| `architect` | 🏛️ Architect | Plan structure before writing a single line |
+| `devops` | 🐳 DevOps | Docker, CI/CD, deployment, infrastructure |
+
+**The Refactor profile in action:**
+
+```
+/profile aufraumen
+
+You: Diese Datei hat 800 Zeilen, bitte aufteilen: /app.py
+
+→ Agent liest app.py
+→ Erstellt Plan: models.py, routes.py, auth.py, utils.py, config.py
+→ Teilt auf, korrigiert alle Imports
+→ Führt Tests aus
+→ Zusammenfassung was wohin verschoben wurde
+```
 
 ### Mission Mode
 
@@ -352,6 +397,7 @@ Befehle ausführen, im Web suchen und sogar seinen eigenen Quellcode verbessern 
 
 - **100% lokal** — Ollama oder LM Studio als Backend, keine Cloud erforderlich
 - **Vollständiges Tool-System** — bash, Dateien lesen/schreiben/bearbeiten, diff, git, grep, glob, Websuche
+- **Agent-Profile** — 14 eingebaute Persönlichkeiten: Vibe-Coder, Aufräumen, Reviewer, Debugger, Erklärer, Frontend, Backend, Tester, Sicherheit, Docs, Performance, Architekt, DevOps
 - **Mission-Mode** — gib ein übergeordnetes Ziel vor; Agent plant und führt es schrittweise aus
 - **Auto-Test-Loop** — führt nach jeder Dateiänderung automatisch deine Tests aus; Agent korrigiert sich selbst
 - **Undo-System** — jede Dateiänderung wird gespeichert; `/undo` stellt jeden vorherigen Zustand sofort wieder her
@@ -419,6 +465,8 @@ local-cli --watch ./src "Führe Tests bei jeder Änderung aus"      # Watch-Mode
 | `/clear` | Konversationsverlauf löschen |
 | `/cd <pfad>` | Arbeitsverzeichnis wechseln |
 | `/compact` | Konversation komprimieren (spart Tokens) |
+| `/profile` | Agenten-Profil wechseln (Auswahl-Menü) |
+| `/profile <id>` | Profil direkt aktivieren (z.B. `/profile aufraumen`) |
 | `/model` | Modell wechseln ohne Neustart |
 | `/save` | Konversation als Markdown speichern |
 | `/memory` | Gespeicherte Erinnerungen anzeigen |
@@ -456,6 +504,48 @@ local-cli --watch ./src "Führe Tests bei jeder Änderung aus"      # Watch-Mode
 | `web_fetch` | Webseiten laden und lesen |
 | `memory` | Persistentes Schlüssel-Wert-Gedächtnis |
 | `self_improve` | Quellcode lesen/bearbeiten, Backup, Changelog |
+
+### Agent-Profile
+
+Wechsle die Persönlichkeit des Agenten je nach Aufgabe. Kein technisches Vorwissen nötig —
+einfach auswählen und der Agent passt sein gesamtes Verhalten an.
+
+```
+/profile              → Auswahl-Menü öffnen
+/profile aufraumen    → Direkt per ID aktivieren
+/profile off          → Zurück zum Standard
+```
+
+| ID | Profil | Am besten für |
+|---|---|---|
+| `standard` | 🤖 Standard | Allzweck-Assistent |
+| `vibe` | ⚡ Vibe-Coder | Einfach machen — schnell, pragmatisch, kein Gerede |
+| `aufraumen` | 🏗️ Aufräumen & Strukturieren | Große Dateien in saubere Module aufteilen |
+| `reviewer` | 🔍 Code-Reviewer | Strukturiertes Feedback — schreibt nie Code, analysiert nur |
+| `debugger` | 🐛 Fehlersuche | Methodisches Bugs-Finden und Beheben |
+| `erklarer` | 📖 Erklärer | Alles in einfacher Sprache, kein Jargon |
+| `frontend` | 🎨 Frontend | HTML, CSS, JS — schön, zugänglich, responsiv |
+| `backend` | ⚙️ Backend | APIs, Datenbanken, Server, Sicherheit |
+| `tester` | 🧪 Tester | Tests die wirklich Bugs fangen |
+| `security` | 🛡️ Sicherheit | Schwachstellen finden bevor jemand anderes es tut |
+| `docs` | 📝 Dokumentation | README, Kommentare, API-Docs die gelesen werden |
+| `performance` | 🚀 Performance | Engpässe finden, messen, dann optimieren |
+| `architect` | 🏛️ Architekt | Erst planen, dann eine einzige Zeile schreiben |
+| `devops` | 🐳 DevOps | Docker, CI/CD, Deployment, Infrastruktur |
+
+**Das Aufräumen-Profil in der Praxis:**
+
+```
+/profile aufraumen
+
+Du: Diese Datei hat 800 Zeilen, bitte aufteilen: /app.py
+
+→ Agent liest app.py vollständig
+→ Erstellt Plan: models.py, routes.py, auth.py, utils.py, config.py
+→ Teilt auf, korrigiert alle Import-Zeilen
+→ Führt Tests aus
+→ Zusammenfassung: was wurde wohin verschoben
+```
 
 ### Mission-Mode
 
