@@ -57,13 +57,14 @@ def _git_autocommit(abs_path: str, action: str) -> None:
     except ValueError:
         rel = abs_path
     msg = f"agent: {action} {rel}"
+    # shell=False + Argumente als Liste: sicher bei Dateinamen mit Leerzeichen/Sonderzeichen
     subprocess.run(
-        f'git add "{abs_path}"',
-        shell=True, capture_output=True, cwd=os.getcwd(),
+        ["git", "add", abs_path],
+        capture_output=True, cwd=os.getcwd(),
     )
     result = subprocess.run(
-        f'git commit -m "{msg}"',
-        shell=True, capture_output=True, text=True,
+        ["git", "commit", "-m", msg],
+        capture_output=True, text=True,
         encoding="utf-8", errors="replace", cwd=os.getcwd(),
     )
     if result.returncode == 0:

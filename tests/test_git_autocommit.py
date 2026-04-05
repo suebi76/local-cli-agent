@@ -34,7 +34,20 @@ def test_git_autocommit_skips_if_no_git_repo(monkeypatch, tmp_path):
     executor_module._git_autocommit(str(tmp_path / "file.py"), "write")
     # Only the rev-parse check should have run, no commit
     assert len(call_log) == 1
+    # cmd is now a string ("git rev-parse ...") for the check call
     assert "rev-parse" in call_log[0]
+
+
+def _cmd_contains(call_log, *tokens):
+    """Check if any call in call_log (string or list) contains all tokens."""
+    for cmd in call_log:
+        if isinstance(cmd, list):
+            joined = " ".join(cmd)
+        else:
+            joined = str(cmd)
+        if all(t in joined for t in tokens):
+            return True
+    return False
 
 
 def test_git_autocommit_runs_commit_when_enabled(monkeypatch, tmp_path):
@@ -52,7 +65,7 @@ def test_git_autocommit_runs_commit_when_enabled(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     executor_module._git_autocommit(str(tmp_path / "hello.py"), "write")
 
-    assert any("rev-parse" in c for c in call_log), "Should check git repo"
-    assert any("git add" in c for c in call_log), "Should stage the file"
-    assert any("git commit" in c for c in call_log), "Should create a commit"
-    assert any("agent: write" in c for c in call_log), "Commit message should include action"
+    assert _cmd_contains(call_log, "rev-parse"), "Should check git repo"
+    assert _cmd_contains(call_log, "git", "add"), "Should stage the file"
+    assert _cmd_contains(call_log, "git", "commit"), "Should create a commit"
+    assert _cmd_contains(call_log, "agent: write"), "Commit message should include action"

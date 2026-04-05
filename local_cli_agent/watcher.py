@@ -50,11 +50,16 @@ def _diff_snapshots(
     new: dict[str, float],
     base: str,
 ) -> list[str]:
-    """Return list of relative paths that were added or modified."""
+    """Return list of relative paths that were added, modified, or deleted."""
     changed = []
+    # Added or modified
     for path, mtime in new.items():
         if path not in old or old[path] != mtime:
             changed.append(os.path.relpath(path, base))
+    # Deleted
+    for path in old:
+        if path not in new:
+            changed.append(os.path.relpath(path, base) + " [gelöscht]")
     return changed
 
 

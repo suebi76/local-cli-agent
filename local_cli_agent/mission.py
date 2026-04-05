@@ -124,10 +124,18 @@ def run_mission(
     # ── Step 3: Execute steps ─────────────────────────────────────────────
     mission_messages = list(messages)   # fresh copy — starts clean
     completed = 0
+    _MAX_HISTORY = 20  # max non-system messages kept to prevent context bloat
 
     for i, step in enumerate(steps, 1):
         print(f"\n{BOLD}{CYAN}[{i}/{len(steps)}]{RESET} {step}")
         print(f"{DIM}{sep}{RESET}", flush=True)
+
+        # Trim history: keep system prompt + last _MAX_HISTORY messages
+        sys_msgs = [m for m in mission_messages if m.get("role") == "system"]
+        other_msgs = [m for m in mission_messages if m.get("role") != "system"]
+        if len(other_msgs) > _MAX_HISTORY:
+            other_msgs = other_msgs[-_MAX_HISTORY:]
+            mission_messages = sys_msgs + other_msgs
 
         mission_messages.append({
             "role": "user",

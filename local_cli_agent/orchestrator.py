@@ -280,12 +280,16 @@ def run_orchestration(
     summaries: list[str] = []
     completed = 0
 
-    for i, step_info in enumerate(plan, 1):
+    # While-loop statt for-loop: ermöglicht echtes Retry des selben Schritts
+    i = 0
+    while i < len(plan):
+        step_info = plan[i]
+        step_num = i + 1          # 1-basierte Anzeige
         specialist = step_info["specialist"]
         step_text = step_info["step"]
         label = _profile_label(specialist)
 
-        print(f"\n{BOLD}{MAGENTA}[{i}/{len(plan)}]{RESET} {label}")
+        print(f"\n{BOLD}{MAGENTA}[{step_num}/{len(plan)}]{RESET} {label}")
         print(f"{DIM}{step_text}{RESET}")
         print(f"{DIM}{sep}{RESET}", flush=True)
 
@@ -293,12 +297,12 @@ def run_orchestration(
         _profiles.set_profile(specialist)
 
         # Build context message
-        context_parts = [f"[Orchestrierung Schritt {i}/{len(plan)} — {label}]"]
+        context_parts = [f"[Orchestrierung Schritt {step_num}/{len(plan)} — {label}]"]
         context_parts.append(f"Gesamtziel: {goal}")
         if summaries:
             context_parts.append("\nBisherige Ergebnisse:")
             for j, (prev_step, summary) in enumerate(
-                zip([s["step"] for s in plan[:i-1]], summaries), 1
+                zip([s["step"] for s in plan[:i]], summaries), 1
             ):
                 spec_label = _profile_label(plan[j-1]["specialist"])
                 context_parts.append(f"  Schritt {j} ({spec_label}): {summary[:_SUMMARY_MAX_CHARS]}")
@@ -311,6 +315,7 @@ def run_orchestration(
 
         # Execute
         step_summary = ""
+        retry = False
         try:
             agent_callback(step_messages, thinking=thinking, max_tokens=max_tokens)
 
@@ -327,10 +332,10 @@ def run_orchestration(
                     step_summary += " [autotest: FEHLGESCHLAGEN]"
 
         except KeyboardInterrupt:
-            print(f"\n{YELLOW}[orchestrator] Unterbrochen bei Schritt {i}.{RESET}")
+            print(f"\n{YELLOW}[orchestrator] Unterbrochen bei Schritt {step_num}.{RESET}")
             break
         except Exception as e:
-            print(f"\n{RED}[orchestrator] Fehler in Schritt {i}: {e}{RESET}")
+            print(f"\n{RED}[orchestrator] Fehler in Schritt {step_num}: {e}{RESET}")
             try:
                 choice = input(
                     f"{YELLOW}[r]etry / [s]kip / [a]bort?{RESET} "
@@ -338,30 +343,33 @@ def run_orchestration(
             except (EOFError, KeyboardInterrupt):
                 break
             if choice == "r":
-                # retry same step
-                i -= 1
-                continue
+                retry = True   # selben Schritt nochmal — i wird NICHT erhöht
             elif choice == "a":
                 break
-            # skip: continue to next
+            # skip: i wird am Ende erhöht, kein Summary-Eintrag
 
-        summaries.append(step_summary or f"Schritt {i} abgeschlossen.")
+        if retry:
+            continue  # i bleibt gleich → selber Schritt
+
+        summaries.append(step_summary or f"Schritt {step_num} abgeschlossen.")
         completed += 1
 
         # Pause between steps
-        if i < len(plan):
+        if step_num < len(plan):
             try:
                 choice = input(
-                    f"\n{DIM}[orchestrator] Schritt {i} fertig. "
-                    f"Weiter mit {_profile_label(plan[i]['specialist'])}? "
+                    f"\n{DIM}[orchestrator] Schritt {step_num} fertig. "
+                    f"Weiter mit {_profile_label(plan[step_num]['specialist'])}? "
                     f"[{BOLD}Enter{RESET}]{DIM} = ja  "
                     f"[{BOLD}s{RESET}] = stopp{RESET}  "
                 ).strip().lower()
             except (EOFError, KeyboardInterrupt):
                 break
             if choice == "s":
-                print(f"{YELLOW}[orchestrator] Gestoppt nach Schritt {i}/{len(plan)}.{RESET}")
+                print(f"{YELLOW}[orchestrator] Gestoppt nach Schritt {step_num}/{len(plan)}.{RESET}")
                 break
+
+        i += 1  # nächster Schritt
 
     # ── Restore original profile ──────────────────────────────────────
     _profiles.set_profile(original_profile_id)
