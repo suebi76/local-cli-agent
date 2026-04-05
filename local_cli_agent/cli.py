@@ -42,6 +42,8 @@ Examples:
     parser.add_argument("--auto", action="store_true", help="Auto-approve all tool calls")
     parser.add_argument("--watch", nargs=2, metavar=("PATH", "INSTRUCTION"),
                         help="Watch PATH and trigger agent with INSTRUCTION on each change")
+    parser.add_argument("--mission", type=str, metavar="GOAL",
+                        help="Run mission mode: agent plans and executes GOAL step by step")
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, lambda *_: (print(f"\n{DIM}Goodbye!{RESET}"), sys.exit(0)))
@@ -65,7 +67,19 @@ Examples:
     # ── Start agent ──────────────────────────────────────────────────────────
     thinking = not args.instant
 
-    if args.watch:
+    if args.mission:
+        from local_cli_agent import mission as _mission
+        from local_cli_agent.agent import agent_loop
+        from local_cli_agent.config import build_system_prompt
+        messages = [{"role": "system", "content": build_system_prompt()}]
+        _mission.run_mission(
+            goal=args.mission,
+            messages=messages,
+            agent_callback=agent_loop,
+            thinking=thinking,
+            max_tokens=args.tokens,
+        )
+    elif args.watch:
         from local_cli_agent import watcher as _watcher
         from local_cli_agent.agent import agent_loop
         watch_path, watch_instr = args.watch

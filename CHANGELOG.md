@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.2.0] — 2026-04-05
+
+### Added
+- **Mission Mode** (`mission.py`) — give the agent a high-level goal; it creates a
+  numbered plan (up to 8 steps), asks for confirmation, executes each step via a
+  separate `agent_loop` call, pauses between steps, and prints a completion summary.
+  Available as `/mission <goal>` and `local-cli --mission "goal"`.
+- **Auto-Test-Loop** (`autotest.py`) — after every `write_file` / `edit_file`, the
+  configured test command runs automatically. Pass/fail output is appended to the
+  tool result so the agent self-corrects without any user input.
+  Available as `/autotest <cmd>` / `/autotest off` / `/autotest status`.
+
+---
+
 ## [2.1.0] — 2026-04-05
 
 ### Added

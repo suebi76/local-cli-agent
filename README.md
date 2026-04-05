@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-2.1.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.2.0-brightgreen.svg)](CHANGELOG.md)
 
 [🇬🇧 English](#english) · [🇩🇪 Deutsch](#deutsch)
 
@@ -22,6 +22,8 @@ the web, and even improve its own source code.
 
 - **Runs 100% locally** — Ollama or LM Studio as backend, no cloud required
 - **Full tool use** — bash, file read/write/edit, diff, git, grep, glob, web search & fetch
+- **Mission mode** — give a high-level goal; agent plans it, executes step by step, pauses for review
+- **Auto-test loop** — runs your test suite after every file change; agent self-corrects on failure
 - **Undo system** — every file change is snapshotted; `/undo` restores any previous state instantly
 - **Project memory** — auto-detects your project (Python, Node, Rust, Go…) and injects context into every prompt
 - **Watch mode** — monitors a path and triggers the agent automatically on every file change
@@ -118,6 +120,9 @@ Interval: 2s  |  /watch stop to exit
 | `/tokens <n>` | Set max output tokens (e.g. `/tokens 8192`) |
 | `/undo [n]` | Undo the last n file changes |
 | `/checkpoint [name]` | Set a manual restore point |
+| `/mission <goal>` | Start mission mode (plan + execute) |
+| `/autotest <cmd>` | Auto-run tests after every file change |
+| `/autotest off` | Disable auto-test |
 | `/watch <path> <instruction>` | Start watch mode |
 | `/watch stop` | Stop watch mode |
 | `/watch status` | Show watch mode status |
@@ -145,6 +150,61 @@ Interval: 2s  |  /watch stop to exit
 | `web_fetch` | Fetch and read web pages |
 | `memory` | Persistent key-value memory across sessions |
 | `self_improve` | Read/edit own source, create backups, view changelog |
+
+### Mission Mode
+
+Give the agent a high-level goal. It creates a numbered plan, asks for your confirmation,
+and executes each step one by one — pausing between steps so you stay in control.
+The complete conversation history grows naturally: later steps have full context of earlier ones.
+
+```bash
+# From the CLI (no interactive session needed)
+local-cli --mission "Add JWT authentication to the Flask API"
+
+# Inside an interactive session
+/mission Refactor all database queries to use async/await
+```
+
+```
+Mission: Add JWT authentication to the Flask API
+────────────────────────────────────────────────────────────
+   1/5  Analyse current auth.py and routes.py
+   2/5  Install PyJWT dependency and update requirements.txt
+   3/5  Implement token generation in auth.py
+   4/5  Add JWT middleware to protected routes
+   5/5  Write tests for login and token validation
+────────────────────────────────────────────────────────────
+
+Mission starten? [Enter] = ja  [n] = abbrechen
+```
+
+After each step: **Enter** to continue · **s** to stop.
+
+### Auto-Test Loop
+
+Enable once, forget about it. After every `write_file` or `edit_file`, the agent
+automatically runs your test suite and sees the result — no human in the loop required.
+
+```
+/autotest pytest tests/ -x        # enable (any shell command works)
+/autotest npm test                 # works with any test runner
+/autotest off                      # disable
+```
+
+**What happens on failure:**
+The test output is appended directly to the tool result the agent receives.
+It sees the failure immediately, diagnoses the cause, and writes a fix — all in the
+same agent loop iteration, without you doing anything.
+
+```
+[auto] write_file: auth.py
+
+[autotest] FAILED
+  FAILED tests/test_auth.py::test_login - AssertionError: 401 != 200
+  1 failed in 0.43s
+
+→ Agent sees failure, corrects auth.py, tests run again → PASSED ✓
+```
 
 ### Undo System
 
@@ -292,6 +352,8 @@ Befehle ausführen, im Web suchen und sogar seinen eigenen Quellcode verbessern 
 
 - **100% lokal** — Ollama oder LM Studio als Backend, keine Cloud erforderlich
 - **Vollständiges Tool-System** — bash, Dateien lesen/schreiben/bearbeiten, diff, git, grep, glob, Websuche
+- **Mission-Mode** — gib ein übergeordnetes Ziel vor; Agent plant und führt es schrittweise aus
+- **Auto-Test-Loop** — führt nach jeder Dateiänderung automatisch deine Tests aus; Agent korrigiert sich selbst
 - **Undo-System** — jede Dateiänderung wird gespeichert; `/undo` stellt jeden vorherigen Zustand sofort wieder her
 - **Projekt-Memory** — erkennt automatisch dein Projekt (Python, Node, Rust, Go…) und injiziert den Kontext in jeden Prompt
 - **Watch-Mode** — beobachtet einen Pfad und löst den Agenten bei jeder Dateiänderung automatisch aus
@@ -364,6 +426,9 @@ local-cli --watch ./src "Führe Tests bei jeder Änderung aus"      # Watch-Mode
 | `/tokens <n>` | Max. Output-Tokens setzen (z.B. `/tokens 8192`) |
 | `/undo [n]` | Letzte n Dateiänderungen rückgängig machen |
 | `/checkpoint [name]` | Manuellen Rückgabepunkt setzen |
+| `/mission <ziel>` | Mission-Mode starten (Agent plant + führt aus) |
+| `/autotest <cmd>` | Tests nach jeder Änderung automatisch ausführen |
+| `/autotest off` | Auto-Test deaktivieren |
 | `/watch <pfad> <anweisung>` | Watch-Mode starten |
 | `/watch stop` | Watch-Mode beenden |
 | `/watch status` | Watch-Status anzeigen |
@@ -391,6 +456,51 @@ local-cli --watch ./src "Führe Tests bei jeder Änderung aus"      # Watch-Mode
 | `web_fetch` | Webseiten laden und lesen |
 | `memory` | Persistentes Schlüssel-Wert-Gedächtnis |
 | `self_improve` | Quellcode lesen/bearbeiten, Backup, Changelog |
+
+### Mission-Mode
+
+Gib dem Agenten ein übergeordnetes Ziel. Er erstellt einen nummerierten Plan, fragt dich
+um Bestätigung und führt jeden Schritt einzeln aus — mit Pause zwischen den Schritten,
+damit du jederzeit eingreifen kannst.
+
+```bash
+# Beim Start per CLI
+local-cli --mission "JWT-Authentifizierung zur Flask-API hinzufügen"
+
+# In einer laufenden Sitzung
+/mission Alle Datenbankabfragen auf async/await umstellen
+```
+
+```
+Mission: JWT-Authentifizierung zur Flask-API hinzufügen
+────────────────────────────────────────────────────────────
+   1/5  Aktuelle auth.py und routes.py analysieren
+   2/5  PyJWT installieren und requirements.txt aktualisieren
+   3/5  Token-Generierung in auth.py implementieren
+   4/5  JWT-Middleware zu geschützten Routen hinzufügen
+   5/5  Tests für Login und Token-Validierung schreiben
+────────────────────────────────────────────────────────────
+
+Mission starten? [Enter] = ja  [n] = abbrechen
+```
+
+Nach jedem Schritt: **Enter** = weiter · **s** = stopp.
+
+### Auto-Test-Loop
+
+Einmal aktivieren, den Rest erledigt der Agent. Nach jedem `write_file` oder `edit_file`
+läuft die Testsuite automatisch — kein manuelles Eingreifen nötig.
+
+```
+/autotest pytest tests/ -x        # aktivieren (beliebiger Shell-Befehl)
+/autotest npm test                 # funktioniert mit jedem Test-Runner
+/autotest off                      # deaktivieren
+```
+
+**Was bei Fehlern passiert:**
+Die Testausgabe wird direkt ans Tool-Ergebnis angehängt, das der Agent sieht.
+Er erkennt den Fehler sofort, analysiert die Ursache und schreibt eine Korrektur —
+alles in derselben Agent-Loop-Iteration, ohne dass du etwas tun musst.
 
 ### Undo-System
 

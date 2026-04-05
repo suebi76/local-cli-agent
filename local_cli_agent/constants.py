@@ -42,4 +42,4 @@ SCRIPT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cli.py")
 ENV_FILE    = os.path.join(SCRIPT_DIR, ".env")
 MEMORY_FILE = os.path.join(SCRIPT_DIR, ".local-cli-memory.json")
 CHANGELOG   = os.path.join(SCRIPT_DIR, ".local-cli-changelog.json")
-VERSION = "2.1.0"
+VERSION = "2.2.0"

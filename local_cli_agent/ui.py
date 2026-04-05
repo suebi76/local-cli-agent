@@ -20,12 +20,16 @@ from local_cli_agent.changelog import get_changelog
 from local_cli_agent.agent import agent_loop
 from local_cli_agent import undo as _undo
 from local_cli_agent import watcher as _watcher
+from local_cli_agent import autotest as _autotest
+from local_cli_agent import mission as _mission
 import local_cli_agent.executor as executor
 
 _SLASH_COMMANDS = [
     "/auto", "/clear", "/cd", "/compact", "/memory",
     "/model", "/history", "/tokens", "/save",
     "/undo", "/checkpoint",
+    "/mission",
+    "/autotest",
     "/watch",
     "/reload", "/version", "/changelog", "/help", "/quit",
 ]
@@ -42,6 +46,8 @@ _CMD_META = {
     "/save":       "Konversation als Markdown speichern",
     "/undo":       "Letzte Dateiänderung rückgängig  z.B. /undo 3",
     "/checkpoint": "Manuellen Rückgabepunkt setzen",
+    "/mission":    "Mehrstufige Mission starten  z.B. /mission Refaktoriere alle API-Endpunkte",
+    "/autotest":   "Tests nach jeder Dateiänderung automatisch ausführen",
     "/watch":      "Dateien beobachten und Agent automatisch auslösen",
     "/reload":     "Nach Self-Improvement neu laden",
     "/version":    "Versionsinformationen",
@@ -86,6 +92,9 @@ def print_banner():
   {YELLOW}/tokens <n>{RESET}       Max. Tokens setzen (z.B. /tokens 8192)
   {YELLOW}/undo [n]{RESET}          Letzte n Dateiänderungen rückgängig machen
   {YELLOW}/checkpoint [name]{RESET} Manuellen Rückgabepunkt setzen
+  {YELLOW}/mission <ziel>{RESET}    Mehrstufige Mission (Agent plant + fuehrt aus)
+  {YELLOW}/autotest <cmd>{RESET}    Tests nach jeder Aenderung automatisch ausfuehren
+  {YELLOW}/autotest off{RESET}      Auto-Test deaktivieren
   {YELLOW}/watch <pfad> <anweisung>{RESET}  Dateien beobachten (Agent auto-auslösen)
   {YELLOW}/watch stop{RESET}        Watch-Mode beenden
   {YELLOW}/watch status{RESET}      Watch-Status anzeigen
@@ -316,6 +325,37 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                 label = " ".join(cmd[1:]) if len(cmd) > 1 else "manuell"
                 result = _undo.save_manual_checkpoint(label)
                 print(f"{DIM}{result}{RESET}\n")
+
+            # ── /mission ──────────────────────────────────────────────────
+            elif cmd_lower == "/mission":
+                goal = " ".join(cmd[1:]).strip()
+                if not goal:
+                    print(f"{DIM}Verwendung: /mission <Ziel>{RESET}\n"
+                          f"  Beispiel: {YELLOW}/mission Refaktoriere alle API-Endpunkte auf async/await{RESET}\n")
+                else:
+                    _mission.run_mission(
+                        goal=goal,
+                        messages=messages,
+                        agent_callback=agent_loop,
+                        thinking=thinking,
+                        max_tokens=max_tokens,
+                    )
+
+            # ── /autotest ─────────────────────────────────────────────────
+            elif cmd_lower == "/autotest":
+                if len(cmd) < 2:
+                    if _autotest.is_enabled():
+                        print(f"{DIM}Auto-Test aktiv:{RESET} {YELLOW}{_autotest.get_cmd()}{RESET}\n"
+                              f"  {DIM}Deaktivieren mit: /autotest off{RESET}\n")
+                    else:
+                        print(f"{DIM}Auto-Test inaktiv.{RESET}\n"
+                              f"  Beispiel: {YELLOW}/autotest pytest tests/{RESET}\n")
+                elif cmd[1].lower() == "off":
+                    print(_autotest.disable())
+                else:
+                    test_cmd = " ".join(cmd[1:])
+                    print(_autotest.enable(test_cmd))
+                print()
 
             # ── /watch ────────────────────────────────────────────────────
             elif cmd_lower == "/watch":

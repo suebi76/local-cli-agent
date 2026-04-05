@@ -33,6 +33,7 @@ from local_cli_agent.web import strip_html
 from local_cli_agent.memory import load_memory, save_memory_file
 from local_cli_agent.changelog import add_changelog_entry, get_changelog
 from local_cli_agent import undo as _undo
+from local_cli_agent import autotest as _autotest
 
 # ── Auto-approve mode ───────────────────────────────────────────────────────
 auto_approve = False
@@ -121,7 +122,14 @@ def execute_tool(name, arguments):
             with open(abs_path, "w", encoding="utf-8") as f:
                 f.write(content)
             print(f" {DIM}Wrote {len(content)} chars -> {abs_path}{RESET}")
-            return f"File written: {abs_path}"
+            result = f"File written: {abs_path}"
+            if _autotest.is_enabled():
+                passed, test_out = _autotest.run()
+                if passed:
+                    result += "\n\n[autotest] Alle Tests bestanden."
+                else:
+                    result += f"\n\n[autotest] Tests FEHLGESCHLAGEN — bitte korrigieren:\n{test_out}"
+            return result
         except Exception as e:
             print(f" {RED}Error: {e}{RESET}")
             return f"Error: {e}"
@@ -159,7 +167,14 @@ def execute_tool(name, arguments):
             with open(abs_path, "w", encoding="utf-8") as f:
                 f.write(new_content)
             print(f" {DIM}Edited {abs_path}{RESET}")
-            return f"File edited: {abs_path}"
+            result = f"File edited: {abs_path}"
+            if _autotest.is_enabled():
+                passed, test_out = _autotest.run()
+                if passed:
+                    result += "\n\n[autotest] Alle Tests bestanden."
+                else:
+                    result += f"\n\n[autotest] Tests FEHLGESCHLAGEN — bitte korrigieren:\n{test_out}"
+            return result
         except Exception as e:
             return f"Error writing file: {e}"
 
