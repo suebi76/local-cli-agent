@@ -3,6 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Version](https://img.shields.io/badge/version-2.4.0-brightgreen.svg)](CHANGELOG.md)
+[![GitHub Stars](https://img.shields.io/github/stars/suebi76/local-cli-agent?style=social)](https://github.com/suebi76/local-cli-agent/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/suebi76/local-cli-agent)](https://github.com/suebi76/local-cli-agent/issues)
+[![Discussions](https://img.shields.io/github/discussions/suebi76/local-cli-agent)](https://github.com/suebi76/local-cli-agent/discussions)
 
 [🇬🇧 English](#english) · [🇩🇪 Deutsch](#deutsch)
 

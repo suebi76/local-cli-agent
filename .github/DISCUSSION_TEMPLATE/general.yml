@@ -1,0 +1,8 @@
+title: "[Discussion] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Welcome to the local-cli-agent discussions!
+        Use this space to share tips, model recommendations, use cases, or anything else.
