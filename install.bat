@@ -279,6 +279,31 @@ if !NEED_REOPEN_TERMINAL!==1 (
 )
 echo.
 echo  ================================================================
+echo   Was du mit dem Agenten machen kannst:
+echo  ================================================================
+echo.
+echo   /profile          15 Agenten-Profile  ^(Vibe-Coder, Debugger,
+echo                     Refactor, Security, Tester, Docs, ...^)
+echo.
+echo   /orchestrate      Master-Orchestrator: komplexe Aufgaben werden
+echo                     automatisch in Spezialisten-Schritte aufgeteilt
+echo                     ^(Architekt -> Backend -> Tester -> Security^)
+echo.
+echo   /mission          Mehrstufige Mission: Agent plant und fuehrt
+echo                     eine Aufgabe Schritt fuer Schritt aus
+echo.
+echo   /autotest         Auto-Test-Loop: Tests nach jeder Dateiänderung
+echo                     automatisch ausfuehren  ^(z.B. /autotest pytest tests/^)
+echo.
+echo   /watch            Verzeichnis beobachten, Agent reagiert auf
+echo                     jede Dateiänderung automatisch
+echo.
+echo   /undo             Letzte Dateiänderungen rueckgaengig machen
+echo                     ^(kein Git-Commit noetig^)
+echo.
+echo   Tipp: /help zeigt alle Befehle im laufenden Agenten.
+echo.
+echo  ================================================================
 echo.
 
 goto :end

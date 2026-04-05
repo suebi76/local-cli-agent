@@ -4,6 +4,116 @@ Repository: https://github.com/suebi76/local-cli-agent
 
 ---
 
+## ✅ Was du jetzt tun musst — Schritt für Schritt
+
+> Alle Texte zum Kopieren findest du weiter unten in dieser Datei.
+
+---
+
+### Schritt 1 — PyPI: Paket veröffentlichen (einmalig)
+
+1. Konto erstellen: https://pypi.org/account/register/
+2. Nach Login: API-Token anlegen unter https://pypi.org/manage/account/token/
+   - Name: z. B. `local-cli-agent`
+   - Scope: "Entire account" (für den ersten Upload)
+   - Auf **"Add token"** klicken
+3. **Token sofort kopieren** — er wird nur einmal angezeigt! (beginnt mit `pypi-...`)
+4. Im Terminal, im Projektordner `local-cli-agent`:
+   ```
+   twine upload dist/*
+   ```
+   - Benutzername: `__token__` (genau so, mit Unterstrichen)
+   - Passwort: dein `pypi-...` Token einfügen
+5. Nach erfolgreichem Upload: https://pypi.org/project/local-cli-agent/ aufrufen und prüfen
+
+---
+
+### Schritt 2 — Reddit r/LocalLLaMA (größte Reichweite)
+
+1. https://www.reddit.com/r/LocalLLaMA/ öffnen
+2. Oben auf **"Create Post"** klicken → Typ "Text"
+3. Titel und Body aus dem Abschnitt **"Reddit — r/LocalLLaMA"** unten kopieren
+4. Auf **"Post"** klicken
+
+---
+
+### Schritt 3 — Reddit r/Python
+
+1. https://www.reddit.com/r/Python/ öffnen
+2. **"Create Post"** → Typ "Text"
+3. Titel und Body aus dem Abschnitt **"Reddit — r/Python"** unten kopieren
+4. Auf **"Post"** klicken
+
+> **Tipp:** Warte 10–15 Minuten zwischen den Reddit-Posts (Anti-Spam-Filter).
+
+---
+
+### Schritt 4 — Hacker News: Show HN
+
+1. https://news.ycombinator.com/submit öffnen (HN-Konto nötig, kostenlos)
+2. **Title:** Den Titel aus dem Abschnitt **"Hacker News"** unten kopieren
+3. **URL:** `https://github.com/suebi76/local-cli-agent`
+4. **Text:** Den Body aus dem Abschnitt unten kopieren
+5. Auf **"submit"** klicken
+
+---
+
+### Schritt 5 — Twitter / X
+
+1. https://x.com öffnen
+2. Neuen Tweet schreiben — **Tweet 1** aus dem Abschnitt **"Twitter / X"** unten kopieren (höchste Reichweite)
+3. Optional: **Tweet 2** und **Tweet 3** als Antwort auf Tweet 1 posten (ergibt einen Thread)
+
+---
+
+### Schritt 6 — GitHub Topics setzen (falls noch nicht geschehen)
+
+1. https://github.com/suebi76/local-cli-agent öffnen
+2. Rechts neben "About" auf das **Zahnrad-Icon** klicken
+3. Im Feld "Topics" folgende Tags eingeben (einzeln, Enter nach jedem):
+   `ollama` `lmstudio` `ai-agent` `coding-assistant` `cli` `local-ai`
+   `python` `llm` `terminal` `developer-tools` `undo` `watch-mode`
+   `orchestrator` `agent-profiles` `autotest` `no-api-key` `vibe-coding` `offline-ai`
+4. Auf **"Save changes"** klicken
+
+---
+
+### Schritt 7 — Awesome Lists: Pull Requests einreichen
+
+Für jede der folgenden Listen einen PR erstellen (die genauen Eintragszeilen stehen im Abschnitt **"Awesome Lists"** unten):
+
+| Liste | URL |
+|---|---|
+| awesome-python | https://github.com/vinta/awesome-python |
+| awesome-generative-ai | https://github.com/steven2358/awesome-generative-ai |
+| Awesome-LLM | https://github.com/Hannibal046/Awesome-LLM |
+| awesome-marketing-datascience | https://github.com/underlines/awesome-marketing-datascience |
+| ai-collection | https://github.com/ai-collection/ai-collection |
+
+**Für jede Liste:**
+1. Repo öffnen → die `README.md` anklicken
+2. Auf das **Stift-Icon** ("Edit this file") klicken
+3. Den passenden Eintragstext aus dem Abschnitt unten einfügen (alphabetisch einordnen)
+4. Unten: **"Propose changes"** → **"Create pull request"**
+
+---
+
+### Schritt 8 — Dev.to oder Hashnode Artikel (optional, aber wertvoll)
+
+1. Konto erstellen: https://dev.to/ oder https://hashnode.com/
+2. Einen der Artikel-Titel aus dem Abschnitt **"Dev.to / Hashnode"** unten als Basis nehmen
+3. Artikel schreiben (600–1200 Wörter reichen), GitHub-Link am Ende
+4. Tags: `python`, `ai`, `llm`, `devtools`, `ollama`
+
+---
+
+> **Empfohlene Reihenfolge:** PyPI zuerst (damit `pip install local-cli-agent` in den Posts funktioniert),
+> dann Reddit r/LocalLLaMA, dann HN, dann Twitter.
+
+---
+
+
+
 ## Reddit — r/LocalLLaMA (highest impact)
 
 **Title:**

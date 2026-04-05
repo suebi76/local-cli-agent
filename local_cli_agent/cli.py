@@ -38,7 +38,7 @@ Examples:
     parser.add_argument("prompt", nargs="?", help="One-shot prompt (omit for interactive)")
     parser.add_argument("--instant", action="store_true", help="Instant mode (no thinking)")
     parser.add_argument("-s", "--system", type=str, help="System prompt")
-    parser.add_argument("-t", "--tokens", type=int, default=4096, help="Max output tokens")
+    parser.add_argument("-t", "--tokens", type=int, default=None, help="Max output tokens (default: saved setting or 4096)")
     parser.add_argument("--auto", action="store_true", help="Auto-approve all tool calls")
     parser.add_argument("--watch", nargs=2, metavar=("PATH", "INSTRUCTION"),
                         help="Watch PATH and trigger agent with INSTRUCTION on each change")

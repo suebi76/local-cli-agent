@@ -24,6 +24,7 @@ from local_cli_agent import autotest as _autotest
 from local_cli_agent import mission as _mission
 from local_cli_agent import profiles as _profiles
 from local_cli_agent import orchestrator as _orchestrator
+from local_cli_agent import settings as _settings
 import local_cli_agent.executor as executor
 
 _SLASH_COMMANDS = [
@@ -114,8 +115,19 @@ def print_banner():
 """)
 
 
-def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
+def interactive_mode(thinking=True, system_prompt=None, max_tokens=None):
     """Run interactive chat loop."""
+    # ── Load persisted settings ───────────────────────────────────────────
+    _saved = _settings.load()
+    if max_tokens is None:
+        max_tokens = _saved.get("max_tokens", 4096)
+    saved_profile = _saved.get("active_profile", "standard")
+    if saved_profile != "standard":
+        _profiles.set_profile(saved_profile)
+    saved_autotest = _saved.get("autotest_cmd")
+    if saved_autotest:
+        _autotest.enable(saved_autotest)
+
     print_banner()
 
     messages = [{"role": "system", "content": build_system_prompt(system_prompt)}]
@@ -197,7 +209,8 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                 if len(cmd) > 1:
                     try:
                         max_tokens = int(cmd[1])
-                        print(f"{DIM}Max Tokens gesetzt: {max_tokens}{RESET}\n")
+                        _settings.set_value("max_tokens", max_tokens)
+                        print(f"{DIM}Max Tokens gesetzt: {max_tokens} (gespeichert){RESET}\n")
                     except ValueError:
                         print(f"{RED}Ungültige Zahl. Beispiel: /tokens 8192{RESET}\n")
                 else:
@@ -294,11 +307,12 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                     pid = cmd[1].lower()
                     chosen = _profiles.set_profile(pid)
                     if chosen:
+                        _settings.set_value("active_profile", chosen.id)
                         messages[0]["content"] = build_system_prompt(system_prompt)
                         if chosen.id == "standard":
-                            print(f"{DIM}Profil zurückgesetzt: Standard{RESET}\n")
+                            print(f"{DIM}Profil zurückgesetzt: Standard (gespeichert){RESET}\n")
                         else:
-                            print(f"{GREEN}Profil aktiv: {chosen.emoji} {chosen.label}{RESET}")
+                            print(f"{GREEN}Profil aktiv: {chosen.emoji} {chosen.label} (gespeichert){RESET}")
                             print(f"{DIM}{chosen.tagline}{RESET}\n")
                     else:
                         ids = ", ".join(_profiles.PROFILES.keys())
@@ -307,11 +321,12 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                 else:
                     chosen = _profiles.show_selector()
                     if chosen:
+                        _settings.set_value("active_profile", chosen.id)
                         messages[0]["content"] = build_system_prompt(system_prompt)
                         if chosen.id == "standard":
-                            print(f"{DIM}Profil zurückgesetzt: Standard{RESET}\n")
+                            print(f"{DIM}Profil zurückgesetzt: Standard (gespeichert){RESET}\n")
                         else:
-                            print(f"\n{GREEN}Profil aktiv: {chosen.emoji} {chosen.label}{RESET}\n")
+                            print(f"\n{GREEN}Profil aktiv: {chosen.emoji} {chosen.label} (gespeichert){RESET}\n")
 
             # ── /compact ───────────────────────────────────────────────────
             elif cmd_lower == "/compact":
@@ -320,23 +335,26 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                     print(f"{DIM}Zu wenig Nachrichten zum Komprimieren (min. 4).{RESET}\n")
                     continue
                 print(f"{DIM}Komprimiere {len(non_sys)} Nachrichten...{RESET}", flush=True)
-                summary_msgs = messages + [{
-                    "role": "user",
-                    "content": (
-                        "Fasse die bisherige Konversation in 3-5 Sätzen zusammen. "
-                        "Halte wichtige Fakten, Entscheidungen und den aktuellen Stand fest. "
-                        "Antworte NUR mit der Zusammenfassung, ohne Einleitung."
-                    ),
-                }]
-                content, _ = call_api(summary_msgs, thinking=False, max_tokens=512, use_tools=False)
-                if content:
-                    messages = [
-                        {"role": "system", "content": build_system_prompt(system_prompt)},
-                        {"role": "assistant", "content": f"[Zusammenfassung der bisherigen Konversation]: {content}"},
-                    ]
-                    print(f"{GREEN}Konversation auf 1 Nachricht komprimiert.{RESET}\n")
-                else:
-                    print(f"{RED}Komprimierung fehlgeschlagen.{RESET}\n")
+                try:
+                    summary_msgs = messages + [{
+                        "role": "user",
+                        "content": (
+                            "Fasse die bisherige Konversation in 3-5 Sätzen zusammen. "
+                            "Halte wichtige Fakten, Entscheidungen und den aktuellen Stand fest. "
+                            "Antworte NUR mit der Zusammenfassung, ohne Einleitung."
+                        ),
+                    }]
+                    content, _ = call_api(summary_msgs, thinking=False, max_tokens=512, use_tools=False)
+                    if content:
+                        messages = [
+                            {"role": "system", "content": build_system_prompt(system_prompt)},
+                            {"role": "assistant", "content": f"[Zusammenfassung der bisherigen Konversation]: {content}"},
+                        ]
+                        print(f"{GREEN}Konversation auf 1 Nachricht komprimiert.{RESET}\n")
+                    else:
+                        print(f"{RED}Komprimierung fehlgeschlagen (leere Antwort).{RESET}\n")
+                except Exception as e:
+                    print(f"{RED}Komprimierung fehlgeschlagen: {e}{RESET}\n")
 
             # ── /undo ──────────────────────────────────────────────────────
             elif cmd_lower == "/undo":
@@ -366,13 +384,16 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                     print(f"{DIM}Verwendung: /mission <Ziel>{RESET}\n"
                           f"  Beispiel: {YELLOW}/mission Refaktoriere alle API-Endpunkte auf async/await{RESET}\n")
                 else:
-                    _mission.run_mission(
-                        goal=goal,
-                        messages=messages,
-                        agent_callback=agent_loop,
-                        thinking=thinking,
-                        max_tokens=max_tokens,
-                    )
+                    try:
+                        _mission.run_mission(
+                            goal=goal,
+                            messages=messages,
+                            agent_callback=agent_loop,
+                            thinking=thinking,
+                            max_tokens=max_tokens,
+                        )
+                    except Exception as e:
+                        print(f"{RED}Mission abgebrochen: {e}{RESET}\n")
 
             # ── /orchestrate ───────────────────────────────────────────────
             elif cmd_lower == "/orchestrate":
@@ -381,13 +402,16 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                     print(f"{DIM}Verwendung: /orchestrate <Ziel>{RESET}\n"
                           f"  Beispiel: {YELLOW}/orchestrate Baue eine REST-API für ein Blog-System{RESET}\n")
                 else:
-                    _orchestrator.run_orchestration(
-                        goal=goal,
-                        messages=messages,
-                        agent_callback=agent_loop,
-                        thinking=thinking,
-                        max_tokens=max_tokens,
-                    )
+                    try:
+                        _orchestrator.run_orchestration(
+                            goal=goal,
+                            messages=messages,
+                            agent_callback=agent_loop,
+                            thinking=thinking,
+                            max_tokens=max_tokens,
+                        )
+                    except Exception as e:
+                        print(f"{RED}Orchestrierung abgebrochen: {e}{RESET}\n")
 
             # ── /autotest ─────────────────────────────────────────────────
             elif cmd_lower == "/autotest":
@@ -399,9 +423,11 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                         print(f"{DIM}Auto-Test inaktiv.{RESET}\n"
                               f"  Beispiel: {YELLOW}/autotest pytest tests/{RESET}\n")
                 elif cmd[1].lower() == "off":
+                    _settings.set_value("autotest_cmd", None)
                     print(_autotest.disable())
                 else:
                     test_cmd = " ".join(cmd[1:])
+                    _settings.set_value("autotest_cmd", test_cmd)
                     print(_autotest.enable(test_cmd))
                 print()
 
@@ -419,14 +445,17 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                 else:
                     watch_path = cmd[1]
                     watch_instr = " ".join(cmd[2:]) if len(cmd) > 2 else "Analysiere und kommentiere die Änderungen."
-                    result = _watcher.start(
-                        path=watch_path,
-                        instruction=watch_instr,
-                        agent_callback=agent_loop,
-                        thinking=thinking,
-                        max_tokens=max_tokens,
-                    )
-                    print(result)
+                    try:
+                        result = _watcher.start(
+                            path=watch_path,
+                            instruction=watch_instr,
+                            agent_callback=agent_loop,
+                            thinking=thinking,
+                            max_tokens=max_tokens,
+                        )
+                        print(result)
+                    except Exception as e:
+                        print(f"{RED}Watch konnte nicht gestartet werden: {e}{RESET}\n")
 
             # ── /reload ────────────────────────────────────────────────────
             elif cmd_lower == "/reload":
