@@ -1,20 +1,10 @@
-# Environment & secrets
+# ── Secrets & user data ───────────────────────────────────────────
 .env
 *.backup.*
-
-# Memory & state (user-specific)
 .local-cli-memory.json
 .local-cli-changelog.json
-.kimi-memory.json
-.kimi-changelog.json
 
-# Tooling
-.playwright-mcp/
-
-# Local models
-models/
-
-# Python
+# ── Python build artifacts ────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -23,25 +13,30 @@ dist/
 build/
 *.egg
 
-# IDE
+# ── Test & benchmark artifacts ────────────────────────────────────
+.pytest_cache/
+.benchmarks/
+
+# ── Local model files (can be gigabytes) ─────────────────────────
+models/
+
+# ── Development-only folders ─────────────────────────────────────
+archive/
+plugins/
+
+# ── IDE ───────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# ── OS ────────────────────────────────────────────────────────────
 Thumbs.db
 .DS_Store
 
-# Claude
+# ── Tool integrations ─────────────────────────────────────────────
 .claude/
+.playwright-mcp/
 
-# Local / temporary files
-00-Profil/
-apply_table_update.py
-fix_format.py
-fix_plugin.py
-repair_kimi.py
-test_plugin.py
-update_table_format.py
-social-media-posts.md
+# ── Session exports (user-generated, stored in CWD) ──────────────
+session_*.md

@@ -13,10 +13,6 @@ def test_ansi_codes_start_with_escape():
         assert color.startswith("\033[")
 
 
-def test_api_url_is_https():
-    assert constants.API_URL.startswith("https://")
-
-
 def test_memory_file_is_absolute():
     assert os.path.isabs(constants.MEMORY_FILE)
 
@@ -33,6 +29,19 @@ def test_script_dir_exists():
     assert os.path.isdir(constants.SCRIPT_DIR)
 
 
+import pytest
+import site as _site
+
+def _is_editable_install():
+    pkg_dir = os.path.dirname(os.path.abspath(constants.__file__))
+    try:
+        sp_dirs = _site.getsitepackages()
+    except AttributeError:
+        sp_dirs = []
+    return not any(pkg_dir.startswith(sp) for sp in sp_dirs)
+
+
+@pytest.mark.skipif(not _is_editable_install(), reason="Only valid for editable (dev) install")
 def test_script_dir_is_project_root():
-    # local_cli_agent/ package should be inside SCRIPT_DIR
+    # local_cli_agent/ package should be inside SCRIPT_DIR for editable installs
     assert os.path.isdir(os.path.join(constants.SCRIPT_DIR, "local_cli_agent"))

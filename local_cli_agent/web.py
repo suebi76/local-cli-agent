@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Steffen Schwabe
 import re
 from html.parser import HTMLParser
 

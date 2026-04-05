@@ -203,49 +203,42 @@ ok "Paket erfolgreich installiert."
 
 if command -v local-cli &>/dev/null; then
     ok "'local-cli' Befehl ist verfügbar."
-    KIMI_CMD="local-cli"
 else
     warn "'local-cli' ist in dieser Shell noch nicht im PATH."
     echo "       Bitte ein neues Terminal öffnen oder 'source ~/.bashrc' ausführen."
     echo "       Alternativ direkt aufrufen: python3 -m local_cli_agent.cli"
-    KIMI_CMD="python3 -m local_cli_agent.cli"
 fi
 
 
 # ════════════════════════════════════════════════════════════════
-#  SCHRITT 6: API-Key prüfen / Setup starten
+#  SCHRITT 6: Modell-Backend einrichten
 # ════════════════════════════════════════════════════════════════
 
-API_KEY_FOUND=0
+echo ""
+info "Lokale KI-Modelle via Ollama oder LM Studio:"
+echo ""
+echo "   OLLAMA (empfohlen – kostenlos, einfach):"
+echo "     https://ollama.com installieren, dann:"
+echo "       ollama pull llama3.2          # 2 GB, schnell"
+echo "       ollama pull qwen2.5-coder     # 4.7 GB, Code"
+echo ""
+echo "   LM STUDIO (mit GUI, Modell-Browser):"
+echo "     https://lmstudio.ai installieren,"
+echo "     Modell laden + Tab \"Local Server\" → \"Start Server\""
+echo ""
 
-# Prüfung 1: .env im Quellordner
-if [ -f "$SCRIPT_DIR/.env" ] && grep -q "NVIDIA_API_KEY" "$SCRIPT_DIR/.env" 2>/dev/null; then
-    API_KEY_FOUND=1
-fi
-
-# Prüfung 2: Umgebungsvariable
-if [ -n "${NVIDIA_API_KEY:-}" ]; then
-    API_KEY_FOUND=1
-fi
-
-# Prüfung 3: .env in site-packages (non-editable install)
-if [ "$API_KEY_FOUND" -eq 0 ]; then
-    SITE_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])" 2>/dev/null || echo "")
-    if [ -n "$SITE_DIR" ] && [ -f "$SITE_DIR/.env" ] && grep -q "NVIDIA_API_KEY" "$SITE_DIR/.env" 2>/dev/null; then
-        API_KEY_FOUND=1
-    fi
-fi
-
-if [ "$API_KEY_FOUND" -eq 1 ]; then
-    ok "API-Key bereits konfiguriert."
+# Prüfe ob Ollama läuft
+if curl -s --connect-timeout 2 http://localhost:11434/api/tags >/dev/null 2>&1; then
+    ok "Ollama läuft und ist bereit."
 else
-    echo ""
-    info "Kein API-Key gefunden. Setup-Assistent wird gestartet..."
-    echo "       Kostenlosen Key erhalten: https://build.nvidia.com/moonshotai/kimi-k2.5"
-    echo ""
-    if ! $KIMI_CMD --setup; then
-        warn "Setup mit Fehler beendet. Später mit 'local-cli --setup' wiederholen."
-    fi
+    info "Ollama läuft nicht – nach Installation: ollama pull llama3.2"
+fi
+
+# Prüfe ob LM Studio läuft
+if curl -s --connect-timeout 2 http://localhost:1234/v1/models >/dev/null 2>&1; then
+    ok "LM Studio Server läuft und ist bereit."
+else
+    info "LM Studio Server läuft nicht."
 fi
 
 

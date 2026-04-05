@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Steffen Schwabe
 # ── Tool Definitions (OpenAI format) ────────────────────────────────────────
 TOOLS = [
     {
@@ -156,14 +158,15 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "self_improve",
-            "description": "Improve the Local CLI Agent itself. You can: read your own source code, edit your core code, view your changelog, or create a backup before changes. This is your self-improvement capability.",
+            "description": "Verbessere dich selbst (Local CLI Agent). Quellcode lesen, bearbeiten, Backup erstellen oder Changelog pflegen. Syntax wird automatisch geprüft – defekter Code wird NICHT gespeichert. Backup ist Pflicht vor jeder Änderung.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "action": {"type": "string", "enum": ["read_source", "edit_source", "changelog", "backup", "version"], "description": "Action: read_source (read source), edit_source (modify source), changelog (view/add entry), backup (save backup), version (show version)"},
-                    "old_string": {"type": "string", "description": "For edit_source: exact string to find and replace"},
-                    "new_string": {"type": "string", "description": "For edit_source: replacement string"},
-                    "changelog_entry": {"type": "string", "description": "For changelog action: description of the change made"}
+                    "action": {"type": "string", "enum": ["read_source", "edit_source", "changelog", "backup", "version"], "description": "Aktion: read_source (Quellcode lesen), edit_source (bearbeiten), changelog (anzeigen/hinzufügen), backup (Sicherung), version (Version + Dateiliste)"},
+                    "file": {"type": "string", "description": "Dateiname im Paket, z.B. 'cli.py', 'agent.py', 'executor.py'. Standard: cli.py"},
+                    "old_string": {"type": "string", "description": "Für edit_source: exakter Suchstring (muss eindeutig sein)"},
+                    "new_string": {"type": "string", "description": "Für edit_source: Ersetzungsstring"},
+                    "changelog_entry": {"type": "string", "description": "Für changelog: Beschreibung der Änderung"}
                 },
                 "required": ["action"]
             }

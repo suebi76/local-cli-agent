@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Steffen Schwabe
+import ast
 import os
 import sys
 import json
@@ -13,6 +16,18 @@ from local_cli_agent.constants import (
     RESET, BOLD, DIM, CYAN, GREEN, YELLOW, MAGENTA, RED,
     VERSION, SCRIPT_FILE,
 )
+
+# ── Package directory (for self_improve file validation) ────────────────────
+_PKG_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _check_python_syntax(code: str, filename: str = "<string>") -> str | None:
+    """Returns None if syntax is valid, or an error message string."""
+    try:
+        ast.parse(code)
+        return None
+    except SyntaxError as e:
+        return f"Syntax-Fehler in {filename} (Zeile {e.lineno}): {e.msg}"
 from local_cli_agent.web import strip_html
 from local_cli_agent.memory import load_memory, save_memory_file
 from local_cli_agent.changelog import add_changelog_entry, get_changelog
@@ -89,6 +104,12 @@ def execute_tool(name, arguments):
     elif name == "write_file":
         path = args.get("path", "")
         content = args.get("content", "")
+        # ── Syntax guard for Python files ────────────────────────────────
+        if path.endswith(".py"):
+            err = _check_python_syntax(content, path)
+            if err:
+                print(f" {RED}Schreiben abgebrochen:{RESET} {err}")
+                return f"Fehler: {err}\nDatei wurde NICHT gespeichert."
         if not ask_permission("write_file", f"{path} ({len(content)} chars)"):
             return "User denied execution."
         try:
@@ -124,6 +145,12 @@ def execute_tool(name, arguments):
         if not ask_permission("edit_file", preview):
             return "User denied execution."
         new_content = content.replace(old_string, new_string, 1)
+        # ── Syntax guard for Python files ────────────────────────────────
+        if abs_path.endswith(".py"):
+            err = _check_python_syntax(new_content, path)
+            if err:
+                print(f" {RED}Bearbeitung abgebrochen:{RESET} {err}")
+                return f"Fehler: {err}\nDatei wurde NICHT verändert."
         try:
             with open(abs_path, "w", encoding="utf-8") as f:
                 f.write(new_content)
@@ -375,70 +402,108 @@ def execute_tool(name, arguments):
     # ── self_improve ─────────────────────────────────────────────────────
     elif name == "self_improve":
         action = args.get("action", "version")
+
+        # Resolve target file: any .py inside the package dir, default = SCRIPT_FILE
+        raw_file = args.get("file", "")
+        if raw_file:
+            target_file = os.path.normpath(os.path.join(_PKG_DIR, os.path.basename(raw_file)))
+            if not target_file.startswith(_PKG_DIR) or not target_file.endswith(".py"):
+                return f"Fehler: Nur .py-Dateien im Paketverzeichnis erlaubt ({_PKG_DIR})"
+        else:
+            target_file = SCRIPT_FILE
+
         if action == "version":
-            return f"Local CLI Agent v{VERSION}\nSource: {SCRIPT_FILE}"
+            py_files = sorted(os.path.basename(f) for f in glob_module.glob(os.path.join(_PKG_DIR, "*.py")))
+            return (
+                f"Local CLI Agent v{VERSION}\n"
+                f"Paketverzeichnis: {_PKG_DIR}\n"
+                f"Bearbeitbare Dateien: {', '.join(py_files)}"
+            )
+
         elif action == "read_source":
-            print(f" {DIM}Reading own source code...{RESET}")
+            print(f" {DIM}Lese Quellcode: {os.path.basename(target_file)}...{RESET}")
             try:
-                with open(SCRIPT_FILE, "r", encoding="utf-8") as f:
+                with open(target_file, "r", encoding="utf-8") as f:
                     content = f.read()
                 lines = content.split("\n")
-                print(f" {DIM}{len(lines)} lines, {len(content)} chars{RESET}")
+                print(f" {DIM}{len(lines)} Zeilen, {len(content)} Zeichen{RESET}")
                 return content
             except Exception as e:
-                return f"Error reading source: {e}"
+                return f"Fehler beim Lesen: {e}"
+
         elif action == "edit_source":
             old_string = args.get("old_string", "")
             new_string = args.get("new_string", "")
             if not old_string or not new_string:
-                return "Error: old_string and new_string required."
+                return "Fehler: old_string und new_string sind erforderlich."
             try:
-                with open(SCRIPT_FILE, "r", encoding="utf-8") as f:
+                with open(target_file, "r", encoding="utf-8") as f:
                     content = f.read()
             except Exception as e:
-                return f"Error reading source: {e}"
+                return f"Fehler beim Lesen: {e}"
             count = content.count(old_string)
             if count == 0:
-                return "Error: old_string not found in source code."
+                return "Fehler: old_string nicht im Quellcode gefunden."
             if count > 1:
-                return f"Error: old_string found {count} times. Be more specific."
-            preview = f"Replace '{old_string[:50]}...' -> '{new_string[:50]}...'"
+                return f"Fehler: old_string kommt {count}x vor – bitte eindeutiger formulieren."
+
+            new_content = content.replace(old_string, new_string, 1)
+
+            # ── PFLICHT: Syntax-Check vor dem Schreiben ───────────────────
+            syntax_err = _check_python_syntax(new_content, os.path.basename(target_file))
+            if syntax_err:
+                print(f" {RED}Schreiben abgebrochen – Syntax-Fehler:{RESET} {syntax_err}")
+                return (
+                    f"ABGEBROCHEN: {syntax_err}\n"
+                    "Die Datei wurde NICHT verändert. Bitte old_string/new_string korrigieren."
+                )
+
+            preview = f"{os.path.basename(target_file)}: '{old_string[:50]}' → '{new_string[:50]}'"
             if not ask_permission("self_improve:edit_source", preview):
-                return "User denied."
-            backup_path = SCRIPT_FILE + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                return "Abgebrochen durch Benutzer."
+
+            # ── PFLICHT: Backup (Fehler = Abbruch) ────────────────────────
+            backup_path = target_file + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             try:
                 with open(backup_path, "w", encoding="utf-8") as f:
                     f.write(content)
                 print(f" {DIM}Backup: {backup_path}{RESET}")
-            except Exception:
-                pass
-            new_content = content.replace(old_string, new_string, 1)
-            try:
-                with open(SCRIPT_FILE, "w", encoding="utf-8") as f:
-                    f.write(new_content)
-                print(f" {GREEN}Source code updated. Use /reload to apply.{RESET}")
-                return f"Source edited successfully. Backup at: {backup_path}\nIMPORTANT: Tell the user to run /reload to apply changes."
             except Exception as e:
-                return f"Error writing source: {e}"
-        elif action == "backup":
-            backup_path = SCRIPT_FILE + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                return f"ABGEBROCHEN: Backup fehlgeschlagen ({e}). Datei wurde NICHT verändert."
+
             try:
-                with open(SCRIPT_FILE, "r", encoding="utf-8") as f:
+                with open(target_file, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                print(f" {GREEN}Quellcode aktualisiert: {os.path.basename(target_file)}{RESET}")
+                return (
+                    f"Erfolgreich bearbeitet: {os.path.basename(target_file)}\n"
+                    f"Backup: {backup_path}\n"
+                    "WICHTIG: /reload ausführen, damit die Änderungen aktiv werden."
+                )
+            except Exception as e:
+                return f"Fehler beim Schreiben: {e}"
+
+        elif action == "backup":
+            backup_path = target_file + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            try:
+                with open(target_file, "r", encoding="utf-8") as f:
                     content = f.read()
                 with open(backup_path, "w", encoding="utf-8") as f:
                     f.write(content)
-                print(f" {DIM}Backup saved: {backup_path}{RESET}")
-                return f"Backup created: {backup_path}"
+                print(f" {DIM}Backup gespeichert: {backup_path}{RESET}")
+                return f"Backup erstellt: {backup_path}"
             except Exception as e:
-                return f"Error: {e}"
+                return f"Fehler: {e}"
+
         elif action == "changelog":
             entry = args.get("changelog_entry", "")
             if entry:
                 add_changelog_entry(entry)
-                return "Changelog entry added."
+                return "Changelog-Eintrag hinzugefügt."
             else:
                 return get_changelog()
-        return f"Unknown self_improve action: {action}"
+
+        return f"Unbekannte self_improve-Aktion: {action}"
 
     # ── unknown ──────────────────────────────────────────────────────────
     else:
