@@ -18,29 +18,36 @@ from local_cli_agent.api import get_model_name, call_api
 from local_cli_agent.memory import load_memory
 from local_cli_agent.changelog import get_changelog
 from local_cli_agent.agent import agent_loop
+from local_cli_agent import undo as _undo
+from local_cli_agent import watcher as _watcher
 import local_cli_agent.executor as executor
 
 _SLASH_COMMANDS = [
     "/auto", "/clear", "/cd", "/compact", "/memory",
     "/model", "/history", "/tokens", "/save",
+    "/undo", "/checkpoint",
+    "/watch",
     "/reload", "/version", "/changelog", "/help", "/quit",
 ]
 
 _CMD_META = {
-    "/auto":      "Auto-approve ein/aus",
-    "/clear":     "Konversationsverlauf löschen",
-    "/cd":        "Arbeitsverzeichnis wechseln",
-    "/compact":   "Konversation komprimieren (spart Tokens)",
-    "/memory":    "Gespeicherte Erinnerungen anzeigen",
-    "/model":     "Modell wechseln",
-    "/history":   "Nachrichtenverlauf anzeigen",
-    "/tokens":    "Max. Output-Tokens setzen  z.B. /tokens 8192",
-    "/save":      "Konversation als Markdown speichern",
-    "/reload":    "Nach Self-Improvement neu laden",
-    "/version":   "Versionsinformationen",
-    "/changelog": "Self-Improvement-Verlauf",
-    "/help":      "Diese Hilfe anzeigen",
-    "/quit":      "Beenden",
+    "/auto":       "Auto-approve ein/aus",
+    "/clear":      "Konversationsverlauf löschen",
+    "/cd":         "Arbeitsverzeichnis wechseln",
+    "/compact":    "Konversation komprimieren (spart Tokens)",
+    "/memory":     "Gespeicherte Erinnerungen anzeigen",
+    "/model":      "Modell wechseln",
+    "/history":    "Nachrichtenverlauf anzeigen",
+    "/tokens":     "Max. Output-Tokens setzen  z.B. /tokens 8192",
+    "/save":       "Konversation als Markdown speichern",
+    "/undo":       "Letzte Dateiänderung rückgängig  z.B. /undo 3",
+    "/checkpoint": "Manuellen Rückgabepunkt setzen",
+    "/watch":      "Dateien beobachten und Agent automatisch auslösen",
+    "/reload":     "Nach Self-Improvement neu laden",
+    "/version":    "Versionsinformationen",
+    "/changelog":  "Self-Improvement-Verlauf",
+    "/help":       "Diese Hilfe anzeigen",
+    "/quit":       "Beenden",
 }
 
 
@@ -77,8 +84,13 @@ def print_banner():
   {YELLOW}/memory{RESET}           Gespeicherte Erinnerungen anzeigen
   {YELLOW}/history{RESET}          Nachrichtenverlauf anzeigen
   {YELLOW}/tokens <n>{RESET}       Max. Tokens setzen (z.B. /tokens 8192)
-  {YELLOW}/reload{RESET}           Nach Self-Improvement neu laden
-  {YELLOW}/version{RESET}          Versionsinformationen
+  {YELLOW}/undo [n]{RESET}          Letzte n Dateiänderungen rückgängig machen
+  {YELLOW}/checkpoint [name]{RESET} Manuellen Rückgabepunkt setzen
+  {YELLOW}/watch <pfad> <anweisung>{RESET}  Dateien beobachten (Agent auto-auslösen)
+  {YELLOW}/watch stop{RESET}        Watch-Mode beenden
+  {YELLOW}/watch status{RESET}      Watch-Status anzeigen
+  {YELLOW}/reload{RESET}            Nach Self-Improvement neu laden
+  {YELLOW}/version{RESET}           Versionsinformationen
   {YELLOW}/changelog{RESET}        Self-Improvement-Verlauf
   {YELLOW}/help{RESET}             Diese Hilfe anzeigen
   {YELLOW}/quit{RESET}             Beenden (oder Ctrl+C)
@@ -283,6 +295,50 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=16384):
                     print(f"{GREEN}Konversation auf 1 Nachricht komprimiert.{RESET}\n")
                 else:
                     print(f"{RED}Komprimierung fehlgeschlagen.{RESET}\n")
+
+            # ── /undo ──────────────────────────────────────────────────────
+            elif cmd_lower == "/undo":
+                n = 1
+                if len(cmd) > 1:
+                    try:
+                        n = int(cmd[1])
+                    except ValueError:
+                        print(f"{RED}Ungültige Zahl. Beispiel: /undo 3{RESET}\n")
+                        continue
+                if _undo.size() == 0:
+                    print(f"{DIM}Undo-Verlauf ist leer.{RESET}\n")
+                else:
+                    result = _undo.undo(n)
+                    print(f"{GREEN}{result}{RESET}\n")
+
+            # ── /checkpoint ────────────────────────────────────────────────
+            elif cmd_lower == "/checkpoint":
+                label = " ".join(cmd[1:]) if len(cmd) > 1 else "manuell"
+                result = _undo.save_manual_checkpoint(label)
+                print(f"{DIM}{result}{RESET}\n")
+
+            # ── /watch ────────────────────────────────────────────────────
+            elif cmd_lower == "/watch":
+                if len(cmd) < 2:
+                    print(f"{DIM}Verwendung:{RESET}\n"
+                          f"  {YELLOW}/watch <pfad> <anweisung>{RESET}  — Watch starten\n"
+                          f"  {YELLOW}/watch stop{RESET}                 — Watch beenden\n"
+                          f"  {YELLOW}/watch status{RESET}               — Status anzeigen\n")
+                elif cmd[1].lower() == "stop":
+                    print(_watcher.stop())
+                elif cmd[1].lower() == "status":
+                    print(_watcher.status())
+                else:
+                    watch_path = cmd[1]
+                    watch_instr = " ".join(cmd[2:]) if len(cmd) > 2 else "Analysiere und kommentiere die Änderungen."
+                    result = _watcher.start(
+                        path=watch_path,
+                        instruction=watch_instr,
+                        agent_callback=agent_loop,
+                        thinking=thinking,
+                        max_tokens=max_tokens,
+                    )
+                    print(result)
 
             # ── /reload ────────────────────────────────────────────────────
             elif cmd_lower == "/reload":

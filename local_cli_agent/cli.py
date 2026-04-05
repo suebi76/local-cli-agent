@@ -27,11 +27,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  local-cli                           Interactive agent chat
-  local-cli --instant                 Fast mode (no reasoning hints)
-  local-cli "Create a React project"  One-shot with tools
-  local-cli -s "You are a Go expert"  Custom system prompt
-  local-cli --auto                    Auto-approve all actions
+  local-cli                              Interactive agent chat
+  local-cli --instant                    Fast mode (no reasoning hints)
+  local-cli "Create a React project"     One-shot with tools
+  local-cli -s "You are a Go expert"     Custom system prompt
+  local-cli --auto                       Auto-approve all actions
+  local-cli --watch ./src "fix all TODOs"  Watch mode
 """,
     )
     parser.add_argument("prompt", nargs="?", help="One-shot prompt (omit for interactive)")
@@ -39,6 +40,8 @@ Examples:
     parser.add_argument("-s", "--system", type=str, help="System prompt")
     parser.add_argument("-t", "--tokens", type=int, default=4096, help="Max output tokens")
     parser.add_argument("--auto", action="store_true", help="Auto-approve all tool calls")
+    parser.add_argument("--watch", nargs=2, metavar=("PATH", "INSTRUCTION"),
+                        help="Watch PATH and trigger agent with INSTRUCTION on each change")
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, lambda *_: (print(f"\n{DIM}Goodbye!{RESET}"), sys.exit(0)))
@@ -62,7 +65,25 @@ Examples:
     # ── Start agent ──────────────────────────────────────────────────────────
     thinking = not args.instant
 
-    if args.prompt:
+    if args.watch:
+        from local_cli_agent import watcher as _watcher
+        from local_cli_agent.agent import agent_loop
+        watch_path, watch_instr = args.watch
+        print(_watcher.start(
+            path=watch_path,
+            instruction=watch_instr,
+            agent_callback=agent_loop,
+            thinking=thinking,
+            max_tokens=args.tokens,
+        ))
+        print(f"{DIM}Watch-Mode läuft. Ctrl+C zum Beenden.{RESET}")
+        try:
+            import time
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print(_watcher.stop())
+    elif args.prompt:
         oneshot_mode(args.prompt, thinking=thinking, system_prompt=args.system, max_tokens=args.tokens)
     else:
         interactive_mode(thinking=thinking, system_prompt=args.system, max_tokens=args.tokens)

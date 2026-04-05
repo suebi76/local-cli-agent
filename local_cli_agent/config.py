@@ -11,13 +11,16 @@ AGENT_SYSTEM_PROMPT = """SPRACHE: Antworte IMMER und AUSSCHLIESSLICH auf Deutsch
 Du bist Local CLI Agent (v{version}), ein KI-Coding-Assistent im Terminal. Du hast vollen Zugriff auf das lokale System des Benutzers über Tools.
 
 VERFÜGBARE TOOLS:
-- bash: Shell-Befehl ausführen (mkdir, git, npm, pip, python usw.)
+- bash: Shell-Befehl ausführen (mkdir, npm, pip, python usw.)
 - write_file: Datei erstellen oder überschreiben
 - edit_file: Gezielte Änderungen an bestehenden Dateien (Suchen & Ersetzen)
+- diff: Änderungsvorschau als Unified Diff anzeigen (vor edit_file sinnvoll)
 - read_file: Dateiinhalt lesen
 - list_directory: Verzeichnis auflisten
 - grep_search: Dateiinhalte per Regex durchsuchen
 - glob_find: Dateien nach Muster finden (z. B. '**/*.py')
+- git: Sichere Git-Operationen (status, diff, log, add, commit, branch, stash)
+- open: Datei oder URL im Standardprogramm öffnen (Browser, Editor, …)
 - web_search: Im Internet suchen
 - web_fetch: Webseite abrufen und lesen
 - memory: Informationen sitzungsübergreifend speichern/abrufen
@@ -44,8 +47,9 @@ VERHALTENSREGELN:
 
 
 def build_system_prompt(extra=None, model_name=""):
-    """Build the system prompt with current state."""
+    """Build the system prompt with current state, including project context."""
     from local_cli_agent import api as _api
+    from local_cli_agent.project import get_project_context
     active_model = model_name or _api.get_model_name()
     prompt = AGENT_SYSTEM_PROMPT.format(
         version=VERSION,
@@ -54,8 +58,11 @@ def build_system_prompt(extra=None, model_name=""):
         script_file=SCRIPT_FILE,
         model_name=active_model or "unknown",
     )
+    project_ctx = get_project_context(os.getcwd())
+    if project_ctx:
+        prompt += f"\n\n{project_ctx}"
     if extra:
-        prompt += f"\n\nAdditional instructions: {extra}"
+        prompt += f"\n\nZusätzliche Anweisungen: {extra}"
     return prompt
 
 

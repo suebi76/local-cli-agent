@@ -32,6 +32,7 @@ def _check_python_syntax(code: str, filename: str = "<string>") -> str | None:
 from local_cli_agent.web import strip_html
 from local_cli_agent.memory import load_memory, save_memory_file
 from local_cli_agent.changelog import add_changelog_entry, get_changelog
+from local_cli_agent import undo as _undo
 
 # ── Auto-approve mode ───────────────────────────────────────────────────────
 auto_approve = False
@@ -115,6 +116,7 @@ def execute_tool(name, arguments):
             return "User denied execution."
         try:
             abs_path = os.path.abspath(path)
+            _undo.save_checkpoint(f"write_file: {path}", [abs_path])
             os.makedirs(os.path.dirname(abs_path) or ".", exist_ok=True)
             with open(abs_path, "w", encoding="utf-8") as f:
                 f.write(content)
@@ -145,6 +147,7 @@ def execute_tool(name, arguments):
         preview = f"{path}: replace '{old_string[:60]}...' with '{new_string[:60]}...'" if len(old_string) > 60 else f"{path}: '{old_string}' -> '{new_string}'"
         if not ask_permission("edit_file", preview):
             return "User denied execution."
+        _undo.save_checkpoint(f"edit_file: {path}", [abs_path])
         new_content = content.replace(old_string, new_string, 1)
         # ── Syntax guard for Python files ────────────────────────────────
         if abs_path.endswith(".py"):
