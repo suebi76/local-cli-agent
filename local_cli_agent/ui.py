@@ -32,7 +32,7 @@ _SLASH_COMMANDS = [
     "/model", "/profile", "/history", "/tokens", "/save",
     "/undo", "/checkpoint",
     "/mission", "/orchestrate",
-    "/autotest",
+    "/autotest", "/gitcommit", "/rich", "/repomap",
     "/watch",
     "/reload", "/version", "/changelog", "/help", "/quit",
 ]
@@ -53,6 +53,9 @@ _CMD_META = {
     "/mission":    "Mehrstufige Mission starten  z.B. /mission Refaktoriere alle API-Endpunkte",
     "/orchestrate": "Master-Orchestrator: mehrere Spezialisten für komplexe Aufgaben",
     "/autotest":   "Tests nach jeder Dateiänderung automatisch ausführen",
+    "/gitcommit":  "Git Auto-Commit on/off — nach jeder Dateiänderung committen",
+    "/rich":       "Markdown-Rendering on/off — Antworten mit Syntax-Highlighting",
+    "/repomap":    "Repo-Map on/off — Codestruktur im System-Prompt anzeigen",
     "/watch":      "Dateien beobachten und Agent automatisch auslösen",
     "/reload":     "Nach Self-Improvement neu laden",
     "/version":    "Versionsinformationen",
@@ -102,6 +105,9 @@ def print_banner():
   {YELLOW}/orchestrate <ziel>{RESET} Mehrere Spezialisten orchestrieren (komplex)
   {YELLOW}/autotest <cmd>{RESET}    Tests nach jeder Aenderung automatisch ausfuehren
   {YELLOW}/autotest off{RESET}      Auto-Test deaktivieren
+  {YELLOW}/gitcommit on|off{RESET}  Git Auto-Commit nach jeder Dateiänderung
+  {YELLOW}/rich on|off{RESET}       Markdown-Rendering mit Syntax-Highlighting
+  {YELLOW}/repomap on|off{RESET}    Codestruktur-Karte im System-Prompt
   {YELLOW}/watch <pfad> <anweisung>{RESET}  Dateien beobachten (Agent auto-auslösen)
   {YELLOW}/watch stop{RESET}        Watch-Mode beenden
   {YELLOW}/watch status{RESET}      Watch-Status anzeigen
@@ -135,7 +141,11 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=None):
     auto_str = f"{GREEN}on{RESET}" if executor.auto_approve else f"{RED}off{RESET}"
     active_p = _profiles.get_active()
     profile_str = f"{active_p.emoji} {active_p.label}" if active_p.id != "standard" else "Standard"
+    gc_str  = f"{GREEN}on{RESET}" if _settings.get("git_autocommit") else f"{RED}off{RESET}"
+    rich_str = f"{GREEN}on{RESET}" if _settings.get("rich_output") else f"{RED}off{RESET}"
+    rm_str  = f"{GREEN}on{RESET}" if _settings.get("repo_map") else f"{RED}off{RESET}"
     print(f"{DIM}Auto-approve: {auto_str} {DIM}| Tokens: {max_tokens} | Profil: {profile_str}{RESET}")
+    print(f"{DIM}Git-Commit: {gc_str}{DIM} | Markdown: {rich_str}{DIM} | Repo-Map: {rm_str}{RESET}")
     print(f"{DIM}CWD: {os.getcwd()}{RESET}\n")
 
     session = PromptSession(
@@ -430,6 +440,52 @@ def interactive_mode(thinking=True, system_prompt=None, max_tokens=None):
                     _settings.set_value("autotest_cmd", test_cmd)
                     print(_autotest.enable(test_cmd))
                 print()
+
+            # ── /gitcommit ────────────────────────────────────────────────
+            elif cmd_lower == "/gitcommit":
+                if len(cmd) > 1 and cmd[1].lower() in ("on", "off"):
+                    val = cmd[1].lower() == "on"
+                    _settings.set_value("git_autocommit", val)
+                    state = f"{GREEN}an{RESET}" if val else f"{RED}aus{RESET}"
+                    print(f"{DIM}Git Auto-Commit: {state} (gespeichert){RESET}\n")
+                else:
+                    val = _settings.get("git_autocommit")
+                    state = f"{GREEN}an{RESET}" if val else f"{RED}aus{RESET}"
+                    print(f"{DIM}Git Auto-Commit aktuell: {state}{RESET}")
+                    print(f"{DIM}  /gitcommit on   – nach jeder Dateiänderung auto-committen{RESET}")
+                    print(f"{DIM}  /gitcommit off  – deaktivieren{RESET}\n")
+
+            # ── /rich ─────────────────────────────────────────────────────
+            elif cmd_lower == "/rich":
+                if len(cmd) > 1 and cmd[1].lower() in ("on", "off"):
+                    val = cmd[1].lower() == "on"
+                    _settings.set_value("rich_output", val)
+                    state = f"{GREEN}an{RESET}" if val else f"{RED}aus{RESET}"
+                    print(f"{DIM}Markdown-Rendering: {state} (gespeichert){RESET}\n")
+                else:
+                    val = _settings.get("rich_output")
+                    state = f"{GREEN}an{RESET}" if val else f"{RED}aus{RESET}"
+                    print(f"{DIM}Markdown-Rendering aktuell: {state}{RESET}")
+                    print(f"{DIM}  /rich on   – Antworten mit Syntax-Highlighting{RESET}")
+                    print(f"{DIM}  /rich off  – rohen Text streamen (wie bisher){RESET}\n")
+
+            # ── /repomap ──────────────────────────────────────────────────
+            elif cmd_lower == "/repomap":
+                if len(cmd) > 1 and cmd[1].lower() in ("on", "off"):
+                    val = cmd[1].lower() == "on"
+                    _settings.set_value("repo_map", val)
+                    state = f"{GREEN}an{RESET}" if val else f"{RED}aus{RESET}"
+                    messages[0]["content"] = build_system_prompt(system_prompt)
+                    print(f"{DIM}Repo-Map: {state} (gespeichert, System-Prompt aktualisiert){RESET}\n")
+                else:
+                    from local_cli_agent.repomap import get_repo_map
+                    preview = get_repo_map(os.getcwd())
+                    if preview:
+                        print(f"{DIM}{preview}{RESET}\n")
+                    else:
+                        val = _settings.get("repo_map")
+                        state = f"{GREEN}an{RESET}" if val else f"{RED}aus{RESET}"
+                        print(f"{DIM}Repo-Map: {state} — kein Python-Projekt im CWD erkannt.{RESET}\n")
 
             # ── /watch ────────────────────────────────────────────────────
             elif cmd_lower == "/watch":

@@ -7,6 +7,9 @@ Currently persisted:
   active_profile  — last used agent profile (e.g. "vibe", "debugger")
   autotest_cmd    — auto-test command or null (e.g. "pytest tests/")
   max_tokens      — max output tokens (e.g. 4096)
+  git_autocommit  — auto-commit after every write/edit (default: False)
+  rich_output     — render agent responses as Markdown via rich (default: True)
+  repo_map        — inject code structure map into system prompt (default: True)
 """
 
 import json
@@ -20,6 +23,9 @@ _DEFAULTS: dict = {
     "active_profile": "standard",
     "autotest_cmd": None,
     "max_tokens": 4096,
+    "git_autocommit": False,
+    "rich_output": True,
+    "repo_map": True,
 }
 
 

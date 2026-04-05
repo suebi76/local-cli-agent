@@ -39,6 +39,37 @@ from local_cli_agent import autotest as _autotest
 auto_approve = False
 
 
+# ── Git Auto-Commit ──────────────────────────────────────────────────────────
+def _git_autocommit(abs_path: str, action: str) -> None:
+    """Stage and commit a single file when git_autocommit setting is enabled."""
+    from local_cli_agent import settings as _settings
+    if not _settings.get("git_autocommit"):
+        return
+    # Check we are inside a git repo
+    check = subprocess.run(
+        "git rev-parse --is-inside-work-tree",
+        shell=True, capture_output=True, cwd=os.getcwd(),
+    )
+    if check.returncode != 0:
+        return
+    try:
+        rel = os.path.relpath(abs_path, os.getcwd())
+    except ValueError:
+        rel = abs_path
+    msg = f"agent: {action} {rel}"
+    subprocess.run(
+        f'git add "{abs_path}"',
+        shell=True, capture_output=True, cwd=os.getcwd(),
+    )
+    result = subprocess.run(
+        f'git commit -m "{msg}"',
+        shell=True, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", cwd=os.getcwd(),
+    )
+    if result.returncode == 0:
+        print(f" {DIM}[git] committed: {rel}{RESET}")
+
+
 def ask_permission(tool_name, details):
     """Ask user for permission before executing a tool."""
     global auto_approve
@@ -129,6 +160,7 @@ def execute_tool(name, arguments):
                     result += "\n\n[autotest] Alle Tests bestanden."
                 else:
                     result += f"\n\n[autotest] Tests FEHLGESCHLAGEN — bitte korrigieren:\n{test_out}"
+            _git_autocommit(abs_path, "write")
             return result
         except Exception as e:
             print(f" {RED}Error: {e}{RESET}")
@@ -174,6 +206,7 @@ def execute_tool(name, arguments):
                     result += "\n\n[autotest] Alle Tests bestanden."
                 else:
                     result += f"\n\n[autotest] Tests FEHLGESCHLAGEN — bitte korrigieren:\n{test_out}"
+            _git_autocommit(abs_path, "edit")
             return result
         except Exception as e:
             return f"Error writing file: {e}"

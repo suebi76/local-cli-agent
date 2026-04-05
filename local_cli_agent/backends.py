@@ -306,6 +306,11 @@ def _stream_once(entry: ModelEntry, messages: list, max_tokens: int, use_tools: 
     tool_calls_acc: dict = {}
     spinner_stopped = False
 
+    # ── Rich output mode (buffer chunks, render complete response) ────────────
+    from local_cli_agent import settings as _settings
+    from local_cli_agent import rendering as _rendering
+    _use_rich = _rendering.is_available() and bool(_settings.get("rich_output"))
+
     # ── Thinking-block state (for models like gemma-reasoning, qwen3) ─────────
     in_thinking = False
     thinking_shown = False   # True once "Denke..." was printed
@@ -379,9 +384,11 @@ def _stream_once(entry: ModelEntry, messages: list, max_tokens: int, use_tools: 
                 if before:
                     if not content_started:
                         content_started = True
-                        print(f"\n{BOLD}{GREEN}Agent:{RESET} ", end="", flush=True)
+                        if not _use_rich:
+                            print(f"\n{BOLD}{GREEN}Agent:{RESET} ", end="", flush=True)
                     full_content += before
-                    print(before, end="", flush=True)
+                    if not _use_rich:
+                        print(before, end="", flush=True)
                 if not thinking_shown:
                     _ensure_spinner_stopped()
                     print(f"\n{DIM}Denke...{RESET}", end="", flush=True)
@@ -409,9 +416,11 @@ def _stream_once(entry: ModelEntry, messages: list, max_tokens: int, use_tools: 
                 if not content_started:
                     _ensure_spinner_stopped()
                     content_started = True
-                    print(f"\n{BOLD}{GREEN}Agent:{RESET} ", end="", flush=True)
+                    if not _use_rich:
+                        print(f"\n{BOLD}{GREEN}Agent:{RESET} ", end="", flush=True)
                 full_content += content_chunk
-                print(content_chunk, end="", flush=True)
+                if not _use_rich:
+                    print(content_chunk, end="", flush=True)
 
             if finish in ("stop", "tool_calls"):
                 break
@@ -439,7 +448,10 @@ def _stream_once(entry: ModelEntry, messages: list, max_tokens: int, use_tools: 
         return None, None
 
     _ensure_spinner_stopped()
-    if content_started:
+    if _use_rich and full_content:
+        print(f"\n{BOLD}{GREEN}Agent:{RESET}")
+        _rendering.render(full_content)
+    elif content_started:
         print(RESET)
 
     # Build structured tool_calls list
