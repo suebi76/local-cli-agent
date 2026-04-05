@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "local-cli-agent"
-version = "2.0.0"
+version = "2.1.0"
 description = "Local CLI Agent - Self-improving AI coding assistant with full tool use"
 readme = "README.md"
 license = {text = "MIT"}

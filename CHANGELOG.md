@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.1.0] — 2026-04-05
+
+### Added
+- **Undo system** (`undo.py`) — automatic file snapshots before every `write_file` / `edit_file`;
+  `/undo [n]` restores the last n changes, `/checkpoint [name]` sets a manual restore point.
+  Up to 30 checkpoints kept per session.
+- **Project memory** (`project.py`) — detects Python, Node.js, Rust, Go, Java, .NET, Flutter, PHP,
+  Ruby projects automatically; reads metadata from `pyproject.toml`, `package.json`, `Cargo.toml`,
+  `go.mod`; extracts git branch, last commit, README summary, test framework; injects a
+  `--- PROJECT CONTEXT ---` block into every system prompt. Results cached via mtime fingerprint.
+- **Watch mode** (`watcher.py`) — polls a path every 2 s using `os.stat()` (no extra deps);
+  triggers the agent automatically on any file change; `/watch <path> <instruction>` slash command
+  and `local-cli --watch <path> <instruction>` CLI flag; `/watch stop` / `/watch status`.
+- `diff` tool — shows a unified diff of proposed changes before applying them
+- `git` tool — safe git operations (status, diff, log, add, commit, branch, stash);
+  permanently blocks `push --force`, `reset --hard`, `clean -f`, `branch -D`
+- `open` tool — opens a file or URL in the OS default application (cross-platform)
+
+### Changed
+- Version bumped to 2.1.0 in `constants.py`, `pyproject.toml`, README badge
+
+---
+
 ## [2.0.0] — 2026-04-05
 
 ### Breaking Changes
